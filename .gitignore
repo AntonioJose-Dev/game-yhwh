@@ -1,0 +1,48 @@
+```
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+target/
+
+# TypeScript/JavaScript compiled files
+*.js.map
+*.ts.map
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# Python related (if any Python files exist)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Coverage reports
+coverage/
+htmlcov/
+*.coverage
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Package manager lock files (preserving existing)
+package-lock.json
+```
