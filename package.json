@@ -1,0 +1,14 @@
+{
+  "name": "shuv-telegram-mini-app",
+  "version": "0.1.0",
+  "description": "SHUV - Juego espiritual para Telegram Mini App",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "serve": "npx serve src/ui -l 3000"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
