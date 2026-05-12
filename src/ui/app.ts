@@ -58,6 +58,31 @@ export {
   getNextAvailableKingdom
 } from './core/kingdoms-config';
 
+// Sistema de Combate
+export {
+  CombatService,
+  createCombatService,
+  getCombatService,
+  type CombatActionType,
+  type BattleState,
+  type CombatLogEntry,
+  type CombatResult,
+  type PrayerResult
+} from './services/combat-service';
+
+export {
+  VERSES_CONFIG,
+  ENEMY_BESTIARY,
+  getAllVerses,
+  getVerseById,
+  getUnlockedVerses,
+  calculateVerseDamage,
+  getVerseEffectiveness,
+  type VerseConfig,
+  type EnemyType,
+  type VerseCategory
+} from './core/verses-config';
+
 // Servicios
 export { 
   PlayerService, 
