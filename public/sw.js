@@ -1,59 +1,45 @@
-const CACHE_NAME = 'shuv-v1';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/index.js',
-  '/core/archetype-configs.js',
-  '/core/archetype-engine.js',
-  '/core/kingdoms-config.js',
-  '/core/verses-config.js',
-  '/services/player-service.js',
-  '/services/combat-service.js',
-  '/services/verses-service.js',
-  '/services/game-service.js',
-  '/persistence/telegram-storage.js'
+const CACHE_NAME = 'shuv-v3';
+const STATIC_ASSETS = [
+  '/game-yhwh/',
+  '/game-yhwh/index.html'
 ];
 
-// Instalar Service Worker y cachear assets
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
 });
 
-// Activar y limpiar cachés antiguas
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then((cacheNames) =>
+      Promise.all(
+        cacheNames.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
+      )
+    ).then(() => self.clients.claim())
   );
 });
 
-// Estrategia: Cache primero, luego red
 self.addEventListener('fetch', (event) => {
+  const url = event.request.url;
+
+  // Network-first para el bundle JS (siempre fresco)
+  if (url.includes('app.js') || url.includes('dist/')) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first para el resto
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) {
-        return response;
-      }
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
       return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
+        if (!response || response.status !== 200 || response.type !== 'basic') return response;
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
       });
     })
