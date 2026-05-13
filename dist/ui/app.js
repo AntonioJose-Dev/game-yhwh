@@ -1089,6 +1089,16 @@ function getPersistenceService() {
   }
   return globalPersistenceService;
 }
+async function savePlayerProgress(playerState, additionalData) {
+  const persistence = getPersistenceService();
+  const existingState = await persistence.loadState();
+  const mergedState = {
+    ...existingState || createInitialExtendedState(playerState),
+    ...playerState,
+    ...additionalData
+  };
+  return persistence.saveState(mergedState);
+}
 async function loadPlayerProgress() {
   const persistence = getPersistenceService();
   return persistence.loadState();
@@ -1641,8 +1651,1105 @@ async function initializeGame(telegramId) {
   globalGameService = new GameService();
   return globalGameService.initialize(telegramId);
 }
+
+// src/core/verses-config.ts
+var VERSES_CONFIG = {
+  // ===== VERSÍCULOS DE PROTECCIÓN (Armadura de Efesios) =====
+  "EFESIOS_6_11": {
+    id: "EFESIOS_6_11",
+    name: "Armadura Completa",
+    category: "PROTECCION",
+    reference: {
+      book: "Efesios",
+      chapter: 6,
+      verse: 11,
+      text: "Vest\xEDos toda la armadura de Dios, para que pod\xE1is estar firmes contra las asechanzas del diablo."
+    },
+    effect: {
+      baseDamage: 0,
+      feScaling: 0,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: []
+    },
+    unlockRequirement: { minStage: 1 },
+    decisionTypeReward: "FAITH",
+    cooldownTurns: 3
+  },
+  "EFESIOS_6_14": {
+    id: "EFESIOS_6_14",
+    name: "Cintur\xF3n de la Verdad",
+    category: "PROTECCION",
+    reference: {
+      book: "Efesios",
+      chapter: 6,
+      verse: 14,
+      text: "Estad, pues, firmes, ce\xF1idos vuestros lomos con la verdad."
+    },
+    effect: {
+      baseDamage: 5,
+      feScaling: 0.3,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["MENTIRA_ENGA\xD1OSA"]
+    },
+    unlockRequirement: { minStage: 2 },
+    decisionTypeReward: "WISDOM"
+  },
+  "EFESIOS_6_15": {
+    id: "EFESIOS_6_15",
+    name: "Calzado del Evangelio",
+    category: "PROTECCION",
+    reference: {
+      book: "Efesios",
+      chapter: 6,
+      verse: 15,
+      text: "Y calzados los pies con el apresto del evangelio de la paz."
+    },
+    effect: {
+      baseDamage: 8,
+      feScaling: 0.4,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["TEMOR_COBARDE", "PEREZA_NEGLIGENTE"]
+    },
+    unlockRequirement: { minStage: 3 },
+    decisionTypeReward: "COURAGE"
+  },
+  "EFESIOS_6_16": {
+    id: "EFESIOS_6_16",
+    name: "Escudo de la Fe",
+    category: "PROTECCION",
+    reference: {
+      book: "Efesios",
+      chapter: 6,
+      verse: 16,
+      text: "Sobre todo, tomad el escudo de la fe, con que pod\xE1is apagar todos los dardos de fuego del maligno."
+    },
+    effect: {
+      baseDamage: 10,
+      feScaling: 0.5,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["DESPERACION_OSCURA", "TEMOR_COBARDE"]
+    },
+    unlockRequirement: { minStage: 5 },
+    decisionTypeReward: "FAITH"
+  },
+  "EFESIOS_6_17": {
+    id: "EFESIOS_6_17",
+    name: "Yelmo de la Salvaci\xF3n",
+    category: "PROTECCION",
+    reference: {
+      book: "Efesios",
+      chapter: 6,
+      verse: 17,
+      text: "Y tomad el yelmo de la salvaci\xF3n, y la espada del Esp\xEDritu, que es la palabra de Dios."
+    },
+    effect: {
+      baseDamage: 15,
+      feScaling: 0.6,
+      revealWeakness: true,
+      divineIntervention: false,
+      bonusDamageVs: ["MENTIRA_ENGA\xD1OSA", "DESPERACION_OSCURA"]
+    },
+    unlockRequirement: { minStage: 8 },
+    decisionTypeReward: "TRANSFORMATION"
+  },
+  // ===== VERSÍCULOS DE ATAQUE =====
+  "SALMO_144_1": {
+    id: "SALMO_144_1",
+    name: "Dios mi Roca",
+    category: "ATAQUE",
+    reference: {
+      book: "Salmos",
+      chapter: 144,
+      verse: 1,
+      text: "Bendito Jehov\xE1, mi roca, que adiestra mis manos para la batalla, y mis dedos para la guerra."
+    },
+    effect: {
+      baseDamage: 20,
+      feScaling: 0.7,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["ORGULLO_SOBERBIO", "IRA_FURIOSA"]
+    },
+    unlockRequirement: { minStage: 4 },
+    decisionTypeReward: "COURAGE"
+  },
+  "SALMO_23_4": {
+    id: "SALMO_23_4",
+    name: "Sin Temor al Mal",
+    category: "ATAQUE",
+    reference: {
+      book: "Salmos",
+      chapter: 23,
+      verse: 4,
+      text: "Aunque ande en valle de sombra de muerte, no temer\xE9 mal alguno, porque t\xFA estar\xE1s conmigo."
+    },
+    effect: {
+      baseDamage: 25,
+      feScaling: 0.8,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["TEMOR_COBARDE", "DESPERACION_OSCURA"]
+    },
+    unlockRequirement: { minStage: 6 },
+    decisionTypeReward: "FAITH"
+  },
+  "EXODO_14_14": {
+    id: "EXODO_14_14",
+    name: "Jehov\xE1 Pelear\xE1",
+    category: "ATAQUE",
+    reference: {
+      book: "\xC9xodo",
+      chapter: 14,
+      verse: 14,
+      text: "Jehov\xE1 pelear\xE1 por vosotros, y vosotros estar\xE9is tranquilos."
+    },
+    effect: {
+      baseDamage: 30,
+      feScaling: 0.9,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["AVARICIA_CODICIOSA", "ESCLAVITUD"]
+    },
+    unlockRequirement: { minStage: 10 },
+    decisionTypeReward: "OBEDIENCE"
+  },
+  "ISAAS_54_17": {
+    id: "ISAAS_54_17",
+    name: "Ninguna Arma Prosperar\xE1",
+    category: "ATAQUE",
+    reference: {
+      book: "Isa\xEDas",
+      chapter: 54,
+      verse: 17,
+      text: "Ninguna arma forjada contra ti prosperar\xE1, y condenar\xE1s toda lengua que se levante contra ti en juicio."
+    },
+    effect: {
+      baseDamage: 35,
+      feScaling: 1,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["MENTIRA_ENGA\xD1OSA", "ENVIDIA_MALIGNA"]
+    },
+    unlockRequirement: { minStage: 12 },
+    decisionTypeReward: "ENDURANCE"
+  },
+  "APOCALIPSIS_12_11": {
+    id: "APOCALIPSIS_12_11",
+    name: "Vencieron por la Sangre",
+    category: "ATAQUE",
+    reference: {
+      book: "Apocalipsis",
+      chapter: 12,
+      verse: 11,
+      text: "Y ellos le han vencido por medio de la sangre del Cordero y de la palabra que ellos testimoniaron."
+    },
+    effect: {
+      baseDamage: 40,
+      feScaling: 1.2,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["DESPERACION_OSCURA", "LUJURIA_IMPURA"]
+    },
+    unlockRequirement: { minStage: 15 },
+    decisionTypeReward: "TRANSFORMATION"
+  },
+  // ===== VERSÍCULOS DE SANACIÓN =====
+  "SALMO_103_3": {
+    id: "SALMO_103_3",
+    name: "Sana Todas las Enfermedades",
+    category: "SANACION",
+    reference: {
+      book: "Salmos",
+      chapter: 103,
+      verse: 3,
+      text: "El es quien perdona todas tus iniquidades, el que sana todas tus dolencias."
+    },
+    effect: {
+      baseDamage: 0,
+      feScaling: 0,
+      healAmount: 30,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: []
+    },
+    unlockRequirement: { minStage: 3 },
+    decisionTypeReward: "COMPASSION",
+    cooldownTurns: 4
+  },
+  "JEREMIAS_30_17": {
+    id: "JEREMIAS_30_17",
+    name: "Subir\xE9 Sanidad",
+    category: "SANACION",
+    reference: {
+      book: "Jerem\xEDas",
+      chapter: 30,
+      verse: 17,
+      text: "Mas yo har\xE9 venir sanidad para ti, y sanar\xE9 tus heridas, dice Jehov\xE1."
+    },
+    effect: {
+      baseDamage: 0,
+      feScaling: 0,
+      healAmount: 50,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: []
+    },
+    unlockRequirement: { minStage: 9 },
+    decisionTypeReward: "FAITH",
+    cooldownTurns: 5
+  },
+  "PEDRO_2_24": {
+    id: "PEDRO_2_24",
+    name: "Por Sus Llagas Fuimos Curados",
+    category: "SANACION",
+    reference: {
+      book: "1 Pedro",
+      chapter: 2,
+      verse: 24,
+      text: "Quien llev\xF3 \xE9l mismo nuestros pecados en su cuerpo sobre el madero, para que nosotros, estando muertos a los pecados, vivamos a la justicia; y por cuya herida fuisteis sanados."
+    },
+    effect: {
+      baseDamage: 0,
+      feScaling: 0,
+      healAmount: 80,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: []
+    },
+    unlockRequirement: { minStage: 18 },
+    decisionTypeReward: "SACRIFICE",
+    cooldownTurns: 6
+  },
+  // ===== VERSÍCULOS DE SABIDURÍA (Revelan Debilidades) =====
+  "PROVERBIOS_3_5": {
+    id: "PROVERBIOS_3_5",
+    name: "F\xEDate de Jehov\xE1",
+    category: "SABIDURIA",
+    reference: {
+      book: "Proverbios",
+      chapter: 3,
+      verse: 5,
+      text: "F\xEDate de Jehov\xE1 de todo tu coraz\xF3n, y no te apoyes en tu propia prudencia."
+    },
+    effect: {
+      baseDamage: 5,
+      feScaling: 0.2,
+      revealWeakness: true,
+      divineIntervention: false,
+      bonusDamageVs: ["ORGULLO_SOBERBIO"]
+    },
+    unlockRequirement: { minStage: 2 },
+    decisionTypeReward: "WISDOM"
+  },
+  "SANTIAGO_1_5": {
+    id: "SANTIAGO_1_5",
+    name: "Pedid Sabidur\xEDa",
+    category: "SABIDURIA",
+    reference: {
+      book: "Santiago",
+      chapter: 1,
+      verse: 5,
+      text: "Y si alguno de vosotros tiene falta de sabidur\xEDa, p\xEDdala a Dios, el cual da a todos abundantemente y sin reproche, y le ser\xE1 dada."
+    },
+    effect: {
+      baseDamage: 10,
+      feScaling: 0.4,
+      revealWeakness: true,
+      divineIntervention: false,
+      bonusDamageVs: ["MENTIRA_ENGA\xD1OSA", "ENVIDIA_MALIGNA"]
+    },
+    unlockRequirement: { minStage: 7 },
+    decisionTypeReward: "WISDOM"
+  },
+  "COLOSENSES_2_3": {
+    id: "COLOSENSES_2_3",
+    name: "Tesoro de Sabidur\xEDa",
+    category: "SABIDURIA",
+    reference: {
+      book: "Colosenses",
+      chapter: 2,
+      verse: 3,
+      text: "En quien est\xE1n escondidos todos los tesoros de la sabidur\xEDa y del conocimiento."
+    },
+    effect: {
+      baseDamage: 15,
+      feScaling: 0.5,
+      revealWeakness: true,
+      divineIntervention: false,
+      bonusDamageVs: ["AVARICIA_CODICIOSA", "GULA_DESVORADA"]
+    },
+    unlockRequirement: { minStage: 14 },
+    decisionTypeReward: "WISDOM"
+  },
+  // ===== VERSÍCULOS DE FE PODEROSA (Intervención Divina) =====
+  "MATEO_17_20": {
+    id: "MATEO_17_20",
+    name: "Fe como Grano de Mostaza",
+    category: "FE_PODEROSA",
+    reference: {
+      book: "Mateo",
+      chapter: 17,
+      verse: 20,
+      text: "Porque de cierto os digo, que si tuviereis fe como un grano de mostaza, dir\xE9is a este monte: P\xE1sate de aqu\xED all\xE1, y se pasar\xE1; y nada os ser\xE1 imposible."
+    },
+    effect: {
+      baseDamage: 50,
+      feScaling: 1.5,
+      revealWeakness: false,
+      divineIntervention: true,
+      bonusDamageVs: ["DESPERACION_OSCURA", "TEMOR_COBARDE"]
+    },
+    unlockRequirement: { minStage: 10, minFeLevel: 60 },
+    decisionTypeReward: "FAITH",
+    cooldownTurns: 7
+  },
+  "MARCO_9_23": {
+    id: "MARCO_9_23",
+    name: "Todo es Posible al que Cree",
+    category: "FE_PODEROSA",
+    reference: {
+      book: "Marcos",
+      chapter: 9,
+      verse: 23,
+      text: "Jes\xFAs le dijo: Si puedes creer, al que cree todo le es posible."
+    },
+    effect: {
+      baseDamage: 60,
+      feScaling: 1.8,
+      revealWeakness: false,
+      divineIntervention: true,
+      bonusDamageVs: ["ORGULLO_SOBERBIO", "INCRELIDAD"]
+    },
+    unlockRequirement: { minStage: 16, minFeLevel: 75 },
+    decisionTypeReward: "FAITH",
+    cooldownTurns: 8
+  },
+  "FILIPENSES_4_13": {
+    id: "FILIPENSES_4_13",
+    name: "Todo lo Puedo en Cristo",
+    category: "FE_PODEROSA",
+    reference: {
+      book: "Filipenses",
+      chapter: 4,
+      verse: 13,
+      text: "Todo lo puedo en Cristo que me fortalece."
+    },
+    effect: {
+      baseDamage: 75,
+      feScaling: 2,
+      revealWeakness: false,
+      divineIntervention: true,
+      bonusDamageVs: ["PEREZA_NEGLIGENTE", "DEBILIDAD"]
+    },
+    unlockRequirement: { minStage: 20, minFeLevel: 85 },
+    decisionTypeReward: "TRANSFORMATION",
+    cooldownTurns: 10
+  },
+  // ===== VERSÍCULOS DE LIBERACIÓN =====
+  "SALMO_34_17": {
+    id: "SALMO_34_17",
+    name: "Libra de Angustias",
+    category: "LIBERACION",
+    reference: {
+      book: "Salmos",
+      chapter: 34,
+      verse: 17,
+      text: "Claman los justos, y Jehov\xE1 oye, y los libra de todas sus angustias."
+    },
+    effect: {
+      baseDamage: 25,
+      feScaling: 0.6,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["DESPERACION_OSCURA", "TEMOR_COBARDE", "ENVIDIA_MALIGNA"]
+    },
+    unlockRequirement: { minStage: 5 },
+    decisionTypeReward: "FAITH"
+  },
+  "GALATAS_5_1": {
+    id: "GALATAS_5_1",
+    name: "Libertad en Cristo",
+    category: "LIBERACION",
+    reference: {
+      book: "G\xE1latas",
+      chapter: 5,
+      verse: 1,
+      text: "Estad, pues, firmes en la libertad con que Cristo nos hizo libres, y no est\xE9is otra vez sujetos al yugo de esclavitud."
+    },
+    effect: {
+      baseDamage: 30,
+      feScaling: 0.8,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["AVARICIA_CODICIOSA", "LUJURIA_IMPURA", "GULA_DESVORADA"]
+    },
+    unlockRequirement: { minStage: 11 },
+    decisionTypeReward: "TRANSFORMATION"
+  },
+  "JUAN_8_36": {
+    id: "JUAN_8_36",
+    name: "El Hijo os Har\xE1 Libres",
+    category: "LIBERACION",
+    reference: {
+      book: "Juan",
+      chapter: 8,
+      verse: 36,
+      text: "As\xED que, si el Hijo os libertare, ser\xE9is verdaderamente libres."
+    },
+    effect: {
+      baseDamage: 45,
+      feScaling: 1,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["MENTIRA_ENGA\xD1OSA", "ESCLAVITUD", "PECADO"]
+    },
+    unlockRequirement: { minStage: 17 },
+    decisionTypeReward: "TRANSFORMATION"
+  },
+  // ===== VERSÍCULOS DE VALOR =====
+  "JOSUE_1_9": {
+    id: "JOSUE_1_9",
+    name: "Esforzado y Valiente",
+    category: "VALOR",
+    reference: {
+      book: "Josu\xE9",
+      chapter: 1,
+      verse: 9,
+      text: "Mira que te mando que te esfuerces y seas valiente; no temas ni desmayes, porque Jehov\xE1 tu Dios estar\xE1 contigo en dondequiera que vayas."
+    },
+    effect: {
+      baseDamage: 20,
+      feScaling: 0.5,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["TEMOR_COBARDE", "PEREZA_NEGLIGENTE"]
+    },
+    unlockRequirement: { minStage: 1 },
+    decisionTypeReward: "COURAGE"
+  },
+  "SALMO_27_1": {
+    id: "SALMO_27_1",
+    name: "Jehov\xE1 es mi Luz",
+    category: "VALOR",
+    reference: {
+      book: "Salmos",
+      chapter: 27,
+      verse: 1,
+      text: "Jehov\xE1 es mi luz y mi salvaci\xF3n; \xBFde qui\xE9n temer\xE9? Jehov\xE1 es la fortaleza de mi vida; \xBFde qui\xE9n he de atemorizarme?"
+    },
+    effect: {
+      baseDamage: 28,
+      feScaling: 0.7,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["DESPERACION_OSCURA", "TEMOR_COBARDE", "IRA_FURIOSA"]
+    },
+    unlockRequirement: { minStage: 8 },
+    decisionTypeReward: "COURAGE"
+  },
+  "TIMOTEO_1_7": {
+    id: "TIMOTEO_1_7",
+    name: "Esp\xEDritu de Poder",
+    category: "VALOR",
+    reference: {
+      book: "2 Timoteo",
+      chapter: 1,
+      verse: 7,
+      text: "Porque no nos ha dado Dios esp\xEDritu de cobard\xEDa, sino de poder, de amor y de dominio propio."
+    },
+    effect: {
+      baseDamage: 35,
+      feScaling: 0.9,
+      revealWeakness: false,
+      divineIntervention: false,
+      bonusDamageVs: ["TEMOR_COBARDE", "PEREZA_NEGLIGENTE", "LUJURIA_IMPURA"]
+    },
+    unlockRequirement: { minStage: 13 },
+    decisionTypeReward: "COURAGE"
+  }
+};
+var ENEMY_BESTIARY = {
+  "ORGULLO_SOBERBIO": {
+    type: "ORGULLO_SOBERBIO",
+    name: "Soberbio",
+    description: "El esp\xEDritu del orgullo que ciega los ojos del coraz\xF3n",
+    baseHp: 100,
+    weaknesses: ["SABIDURIA", "PROTECCION"],
+    resistances: ["ATAQUE"],
+    specialAbility: "Cegamiento: Reduce efectividad de vers\xEDculos de ataque"
+  },
+  "AVARICIA_CODICIOSA": {
+    type: "AVARICIA_CODICIOSA",
+    name: "Codicioso",
+    description: "El guardi\xE1n de las minas doradas que esclaviza corazones",
+    baseHp: 120,
+    weaknesses: ["LIBERACION", "SABIDURIA"],
+    resistances: ["SANACION"],
+    specialAbility: "Robo de Man\xE1: Drena recursos del jugador"
+  },
+  "LUJURIA_IMPURA": {
+    type: "LUJURIA_IMPURA",
+    name: "Impuro",
+    description: "La tentaci\xF3n que marchita el alma con deseos carnales",
+    baseHp: 90,
+    weaknesses: ["PROTECCION", "LIBERACION"],
+    resistances: ["VALOR"],
+    specialAbility: "Distracci\xF3n: Puede fallar el siguiente ataque"
+  },
+  "IRA_FURIOSA": {
+    type: "IRA_FURIOSA",
+    name: "Furia Descontrolada",
+    description: "El volc\xE1n de ira que consume todo a su paso",
+    baseHp: 110,
+    weaknesses: ["SABIDURIA", "SANACION"],
+    resistances: ["PROTECCION"],
+    specialAbility: "Contraataque Furioso: Da\xF1a al jugador tras recibir golpe"
+  },
+  "GULA_DESVORADA": {
+    type: "GULA_DESVORADA",
+    name: "Desvorador",
+    description: "El banquete eterno que nunca sacia el hambre espiritual",
+    baseHp: 130,
+    weaknesses: ["LIBERACION", "SABIDURIA"],
+    resistances: ["SANACION"],
+    specialAbility: "Consumir: Roba curaci\xF3n del jugador"
+  },
+  "ENVIDIA_MALIGNA": {
+    type: "ENVIDIA_MALIGNA",
+    name: "Envidioso",
+    description: "Los espejos oscuros que distorsionan la realidad",
+    baseHp: 95,
+    weaknesses: ["SABIDURIA", "LIBERACION"],
+    resistances: ["ATAQUE"],
+    specialAbility: "Imitaci\xF3n: Copia el \xFAltimo vers\xEDculo usado"
+  },
+  "PEREZA_NEGLIGENTE": {
+    type: "PEREZA_NEGLIGENTE",
+    name: "Negligente",
+    description: "Las arenas movedizas de la inacci\xF3n espiritual",
+    baseHp: 100,
+    weaknesses: ["VALOR", "FE_PODEROSA"],
+    resistances: ["SABIDURIA"],
+    specialAbility: "Letargo: Reduce velocidad de acci\xF3n del jugador"
+  },
+  "DESPERACION_OSCURA": {
+    type: "DESPERACION_OSCURA",
+    name: "Desesperaci\xF3n",
+    description: "La oscuridad que susurra que no hay esperanza",
+    baseHp: 80,
+    weaknesses: ["FE_PODEROSA", "VALOR", "SANACION"],
+    resistances: ["SABIDURIA"],
+    specialAbility: "Susurro Oscuro: Reduce FE del jugador"
+  },
+  "MENTIRA_ENGA\xD1OSA": {
+    type: "MENTIRA_ENGA\xD1OSA",
+    name: "Enga\xF1ador",
+    description: "El padre de mentira que distorsiona la verdad",
+    baseHp: 85,
+    weaknesses: ["PROTECCION", "SABIDURIA"],
+    resistances: ["LIBERACION"],
+    specialAbility: "Ilusi\xF3n: Puede esquivar ataques"
+  },
+  "TEMOR_COBARDE": {
+    type: "TEMOR_COBARDE",
+    name: "Temor Paralizante",
+    description: "El miedo que paraliza y impide avanzar",
+    baseHp: 70,
+    weaknesses: ["FE_PODEROSA", "VALOR", "PROTECCION"],
+    resistances: ["SABIDURIA"],
+    specialAbility: "Par\xE1lisis: Puede impedir acci\xF3n del jugador"
+  },
+  "ESCLAVITUD": {
+    type: "ESCLAVITUD",
+    name: "Esclavitud Espiritual",
+    description: "Cadenas invisibles que atan el alma al pecado",
+    baseHp: 140,
+    weaknesses: ["LIBERACION", "FE_PODEROSA"],
+    resistances: ["ATAQUE"],
+    specialAbility: "Ataduras: Reduce efectividad de acciones"
+  },
+  "INCRELIDAD": {
+    type: "INCRELIDAD",
+    name: "Incredulidad",
+    description: "La duda que debilita la fe y el poder espiritual",
+    baseHp: 75,
+    weaknesses: ["FE_PODEROSA", "SABIDURIA"],
+    resistances: ["PROTECCION"],
+    specialAbility: "Duda: Reduce FE del jugador gradualmente"
+  },
+  "DEBILIDAD": {
+    type: "DEBILIDAD",
+    name: "Debilidad Carnal",
+    description: "La carne es d\xE9bil y vulnerable a la tentaci\xF3n",
+    baseHp: 60,
+    weaknesses: ["VALOR", "FE_PODEROSA"],
+    resistances: ["SANACION"],
+    specialAbility: "Flaqueza: Drena energ\xEDa del jugador"
+  },
+  "PECADO": {
+    type: "PECADO",
+    name: "Pecado Oculto",
+    description: "El pecado escondido que corroe desde dentro",
+    baseHp: 150,
+    weaknesses: ["LIBERACION", "SABIDURIA", "PROTECCION"],
+    resistances: ["ATAQUE"],
+    specialAbility: "Corrupci\xF3n: Aplica da\xF1o continuo al jugador"
+  }
+};
+function getAllVerses() {
+  return Object.values(VERSES_CONFIG);
+}
+function getVerseById(verseId) {
+  return VERSES_CONFIG[verseId] || null;
+}
+function getUnlockedVerses(currentStage, feLevel, kingdom) {
+  return getAllVerses().filter((verse) => {
+    const req = verse.unlockRequirement;
+    if (currentStage < req.minStage) return false;
+    if (req.minFeLevel && feLevel < req.minFeLevel) return false;
+    if (req.kingdom && kingdom && req.kingdom !== kingdom) return false;
+    return true;
+  });
+}
+function calculateVerseDamage(verse, enemyType, feLevel) {
+  const effect = verse.effect;
+  let damage = effect.baseDamage;
+  damage += feLevel * effect.feScaling;
+  const enemy = ENEMY_BESTIARY[enemyType];
+  if (enemy.weaknesses.includes(verse.category)) {
+    damage *= 1.5;
+  }
+  if (enemy.resistances.includes(verse.category)) {
+    damage *= 0.7;
+  }
+  if (effect.bonusDamageVs?.includes(enemyType)) {
+    damage *= 1.3;
+  }
+  return Math.floor(damage);
+}
+function getVerseEffectiveness(verse, enemyType) {
+  const enemy = ENEMY_BESTIARY[enemyType];
+  if (enemy.weaknesses.includes(verse.category)) {
+    return "SUPER_EFFECTIVE";
+  }
+  if (enemy.resistances.includes(verse.category)) {
+    return "RESISTED";
+  }
+  if (verse.effect.bonusDamageVs?.includes(enemyType)) {
+    return "SUPER_EFFECTIVE";
+  }
+  return "EFFECTIVE";
+}
+
+// src/services/combat-service.ts
+function getEnemyForStage(stageId) {
+  const stage = getStageById(stageId);
+  if (!stage) {
+    return { type: "ORGULLO_SOBERBIO", hpMultiplier: 1 };
+  }
+  const kingdomEnemyMap = {
+    "ORGULLO": "ORGULLO_SOBERBIO",
+    "AVARICIA": "AVARICIA_CODICIOSA",
+    "LUJURIA": "LUJURIA_IMPURA",
+    "IRA": "IRA_FURIOSA",
+    "GULA": "GULA_DESVORADA",
+    "ENVIDIA": "ENVIDIA_MALIGNA",
+    "PEREZA": "PEREZA_NEGLIGENTE"
+  };
+  const kingdom = stage.kingdom;
+  const enemyType = kingdomEnemyMap[kingdom] || "ORGULLO_SOBERBIO";
+  let hpMultiplier = 1;
+  if (stage.difficulty === "MEDIUM") hpMultiplier = 1.3;
+  if (stage.difficulty === "BOSS") hpMultiplier = 1.8;
+  return { type: enemyType, hpMultiplier };
+}
+var CombatService = class {
+  constructor(playerService) {
+    this.currentBattle = null;
+    this.playerService = playerService;
+  }
+  /**
+   * Inicia una nueva batalla para una etapa específica
+   */
+  async startBattle(stageId) {
+    const playerState = await loadPlayerProgress();
+    if (!playerState) {
+      throw new Error("No hay estado del jugador cargado");
+    }
+    const enemyConfig = getEnemyForStage(stageId);
+    const enemyBestiary = ENEMY_BESTIARY[enemyConfig.type];
+    const maxEnemyHp = Math.floor(enemyBestiary.baseHp * enemyConfig.hpMultiplier);
+    const unlockedVerses = getUnlockedVerses(
+      playerState.currentStage,
+      playerState.feLevel,
+      void 0
+      // kingdom se puede pasar si se quiere filtrar
+    );
+    const basePlayerHp = 100;
+    const feBonus = Math.floor(playerState.feLevel * 0.5);
+    const armorBonus = playerState.inventory.armorPieces.length * 20;
+    const maxPlayerHp = basePlayerHp + feBonus + armorBonus;
+    this.currentBattle = {
+      isActive: true,
+      stageId,
+      enemy: {
+        type: enemyConfig.type,
+        name: enemyBestiary.name,
+        currentHp: maxEnemyHp,
+        maxHp: maxEnemyHp,
+        weaknessRevealed: false
+      },
+      player: {
+        currentHp: maxPlayerHp,
+        maxHp: maxPlayerHp,
+        feLevel: playerState.feLevel,
+        isDefending: false,
+        defenseTurnsRemaining: 0
+      },
+      turn: 1,
+      combatLog: [],
+      unlockedVerses,
+      verseCooldowns: {}
+    };
+    this.addLogEntry("ENEMY", "Encuentro", `\xA1Un ${enemyBestiary.name} salvaje aparece!`, enemyBestiary.description);
+    return this.currentBattle;
+  }
+  /**
+   * Ejecuta una acción del jugador
+   */
+  async executeAction(actionType, verseId) {
+    if (!this.currentBattle || !this.currentBattle.isActive) {
+      throw new Error("No hay batalla activa");
+    }
+    const battle = this.currentBattle;
+    let enemyAttacks = true;
+    let prayerResult;
+    if (battle.player.isDefending && battle.player.defenseTurnsRemaining <= 0) {
+      battle.player.isDefending = false;
+    }
+    switch (actionType) {
+      case "ATTACK":
+        if (!verseId) {
+          throw new Error("Se requiere verseId para atacar");
+        }
+        this.executeAttack(verseId);
+        break;
+      case "PRAY":
+        prayerResult = this.executePrayer();
+        if (prayerResult.type === "DIVINE_INTERVENTION") {
+          enemyAttacks = false;
+        }
+        break;
+      case "DEFEND":
+        this.executeDefend();
+        break;
+      case "FLEE":
+        return await this.attemptToFlee();
+    }
+    if (enemyAttacks && battle.enemy.currentHp > 0) {
+      this.executeEnemyTurn();
+    }
+    if (battle.enemy.currentHp <= 0) {
+      return await this.handleVictory();
+    }
+    if (battle.player.currentHp <= 0) {
+      return await this.handleDefeat();
+    }
+    battle.turn++;
+    for (const [verseId2, cooldown] of Object.entries(battle.verseCooldowns)) {
+      if (cooldown > 0) {
+        battle.verseCooldowns[verseId2] = cooldown - 1;
+      }
+    }
+    return {
+      battleState: battle,
+      prayerResult,
+      enemyAttacks
+    };
+  }
+  /**
+   * Ejecuta un ataque con versículo
+   */
+  executeAttack(verseId) {
+    const battle = this.currentBattle;
+    const verse = getVerseById(verseId);
+    if (!verse) {
+      this.addLogEntry("PLAYER", "Error", "Vers\xEDculo no encontrado");
+      return;
+    }
+    if (battle.verseCooldowns[verseId] && battle.verseCooldowns[verseId] > 0) {
+      this.addLogEntry("PLAYER", "Espera", `${verse.name} a\xFAn est\xE1 en recarga (${battle.verseCooldowns[verseId]} turnos)`);
+      return;
+    }
+    const damage = calculateVerseDamage(verse, battle.enemy.type, battle.player.feLevel);
+    const effectiveness = getVerseEffectiveness(verse, battle.enemy.type);
+    battle.enemy.currentHp = Math.max(0, battle.enemy.currentHp - damage);
+    let effectivenessText = "";
+    if (effectiveness === "SUPER_EFFECTIVE") {
+      effectivenessText = " \xA1S\xFAper efectivo!";
+    } else if (effectiveness === "RESISTED") {
+      effectivenessText = " (Resistido)";
+    }
+    this.addLogEntry(
+      "PLAYER",
+      "Ataque",
+      `Usas "${verse.name}"${effectivenessText}`,
+      verse.reference.text,
+      verseId,
+      damage
+    );
+    if (verse.effect.revealWeakness && !battle.enemy.weaknessRevealed) {
+      battle.enemy.weaknessRevealed = true;
+      this.addLogEntry("PLAYER", "Sabidur\xEDa", "\xA1Has revelado la debilidad del enemigo!", "", verseId);
+    }
+    if (verse.cooldownTurns && verse.cooldownTurns > 0) {
+      battle.verseCooldowns[verseId] = verse.cooldownTurns;
+    }
+    if (verse.decisionTypeReward) {
+      this.recordCombatDecision(verse.decisionTypeReward, `Us\xF3 ${verse.name} en combate`);
+    }
+  }
+  /**
+   * Ejecuta acción de orar con 3 resultados según FE
+   */
+  executePrayer() {
+    const battle = this.currentBattle;
+    const feLevel = battle.player.feLevel;
+    let result;
+    if (feLevel < 40) {
+      const healAmount = 15 + Math.floor(feLevel * 0.3);
+      battle.player.currentHp = Math.min(battle.player.maxHp, battle.player.currentHp + healAmount);
+      result = {
+        type: "HEAL_MINOR",
+        description: "Oras en silencio... sientes una peque\xF1a sanidad.",
+        effect: { healAmount },
+        feThreshold: "LOW"
+      };
+      this.addLogEntry("PLAYER", "Oraci\xF3n", `Oras y recuperas ${healAmount} HP`, "", void 0, void 0, healAmount);
+    } else if (feLevel < 75) {
+      const alreadyRevealed = battle.enemy.weaknessRevealed;
+      battle.enemy.weaknessRevealed = true;
+      result = {
+        type: "REVEAL_WEAKNESS",
+        description: alreadyRevealed ? "Oras buscando entendimiento... ya conoc\xEDas la debilidad del enemigo." : "Oras y YHWH revela la debilidad de tu enemigo!",
+        effect: { weaknessRevealed: true },
+        feThreshold: "MEDIUM"
+      };
+      this.addLogEntry(
+        "PLAYER",
+        "Oraci\xF3n",
+        alreadyRevealed ? "Oras buscando entendimiento..." : "\xA1YHWH revela la debilidad del enemigo!",
+        ""
+      );
+    } else {
+      const divineDamage = 50 + Math.floor(feLevel * 1.5);
+      battle.enemy.currentHp = Math.max(0, battle.enemy.currentHp - divineDamage);
+      result = {
+        type: "DIVINE_INTERVENTION",
+        description: "\xA1YHWH interviene directamente con poder divino!",
+        effect: { damage: divineDamage, divineStrike: true },
+        feThreshold: "HIGH"
+      };
+      this.addLogEntry(
+        "PLAYER",
+        "Intervenci\xF3n Divina",
+        `\xA1El poder de YHWH golpea al enemigo con ${divineDamage} de da\xF1o!`,
+        "Porque t\xFA eres mi l\xE1mpara, oh Jehov\xE1; Jehov\xE1 alumbrar\xE1 mis tinieblas. (2 Samuel 22:29)",
+        void 0,
+        divineDamage
+      );
+    }
+    this.recordCombatDecision("FAITH", "Or\xF3 durante el combate");
+    return result;
+  }
+  /**
+   * Ejecuta acción de defender (Armadura de Efesios)
+   */
+  executeDefend() {
+    const battle = this.currentBattle;
+    battle.player.isDefending = true;
+    battle.player.defenseTurnsRemaining = 2;
+    this.addLogEntry(
+      "PLAYER",
+      "Defensa",
+      "Te vistes con toda la Armadura de Efesios",
+      "Vest\xEDos toda la armadura de Dios, para que pod\xE1is estar firmes contra las asechanzas del diablo. (Efesios 6:11)"
+    );
+    this.recordCombatDecision("FAITH", "Se defendi\xF3 con la Armadura de Efesios");
+  }
+  /**
+   * Intenta huir del combate
+   */
+  async attemptToFlee() {
+    const battle = this.currentBattle;
+    const fleeChance = 0.3 + battle.player.feLevel / 200;
+    const success = Math.random() < fleeChance;
+    if (success) {
+      this.addLogEntry("PLAYER", "Huida", "Logras escapar del enemigo...", "");
+      battle.isActive = false;
+      await this.handleDefeat(true);
+      return {
+        battleState: battle,
+        enemyAttacks: false
+      };
+    } else {
+      this.addLogEntry("PLAYER", "Huida Fallida", "No puedes escapar! El enemigo te bloquea el paso.", "");
+      this.executeEnemyTurn(true);
+      return {
+        battleState: battle,
+        enemyAttacks: false
+        // Ya atacó en executeEnemyTurn
+      };
+    }
+  }
+  /**
+   * Ejecuta el turno del enemigo
+   */
+  executeEnemyTurn(fleeAttemptBonus = false) {
+    const battle = this.currentBattle;
+    const enemy = ENEMY_BESTIARY[battle.enemy.type];
+    let damage = Math.floor(enemy.baseHp * 0.15);
+    if (battle.player.isDefending) {
+      damage = Math.floor(damage * 0.4);
+    }
+    if (fleeAttemptBonus) {
+      damage = Math.floor(damage * 1.5);
+    }
+    const variance = 0.8 + Math.random() * 0.4;
+    damage = Math.floor(damage * variance);
+    battle.player.currentHp = Math.max(0, battle.player.currentHp - damage);
+    if (battle.player.isDefending) {
+      battle.player.defenseTurnsRemaining--;
+    }
+    this.addLogEntry(
+      "ENEMY",
+      "Ataque",
+      `${battle.enemy.name} te ataca`,
+      enemy.specialAbility || "",
+      void 0,
+      damage
+    );
+  }
+  /**
+   * Maneja la victoria del jugador
+   */
+  async handleVictory() {
+    const battle = this.currentBattle;
+    battle.isActive = false;
+    this.addLogEntry("PLAYER", "Victoria", "\xA1Has vencido al enemigo!", "El justo ser\xE1 como \xE1rbol plantado junto a corrientes de aguas. (Salmos 1:3)");
+    const stage = getStageById(battle.stageId);
+    const feGained = stage?.rewards?.feBonus || 5;
+    const itemsUnlocked = [];
+    if (stage?.rewards?.scroll) {
+      itemsUnlocked.push(`Pergamino: ${stage.rewards.scroll}`);
+    }
+    if (stage?.rewards?.armorPiece) {
+      itemsUnlocked.push(`Armadura: ${stage.rewards.armorPiece}`);
+    }
+    const playerState = await loadPlayerProgress();
+    if (playerState) {
+      playerState.feLevel = Math.min(100, playerState.feLevel + feGained);
+      if (stage?.rewards?.scroll && !playerState.inventory.scrolls.includes(stage.rewards.scroll)) {
+        playerState.inventory.scrolls.push(stage.rewards.scroll);
+      }
+      if (stage?.rewards?.armorPiece && !playerState.inventory.armorPieces.includes(stage.rewards.armorPiece)) {
+        playerState.inventory.armorPieces.push(stage.rewards.armorPiece);
+      }
+      playerState.stats.battlesWon += 1;
+      await savePlayerProgress(playerState, {});
+    }
+    return {
+      battleState: battle,
+      enemyAttacks: false
+    };
+  }
+  /**
+   * Maneja la derrota del jugador
+   */
+  async handleDefeat(fled = false) {
+    const battle = this.currentBattle;
+    battle.isActive = false;
+    const message = fled ? "Has escapado... pero la batalla queda pendiente." : "Has sido derrotado... pero YHWH te da otra oportunidad.";
+    this.addLogEntry("PLAYER", "Derrota", message, "Caer\xE1s siete veces, pero te levantar\xE1s. (Proverbios 24:16)");
+    const playerState = await loadPlayerProgress();
+    if (playerState) {
+      playerState.stats.battlesLost += 1;
+      await savePlayerProgress(playerState, {});
+    }
+    return {
+      battleState: battle,
+      enemyAttacks: false
+    };
+  }
+  /**
+   * Añade entrada al log de combate
+   */
+  addLogEntry(actor, action, description, verseText = "", verseId, damageDealt, healingDone) {
+    if (!this.currentBattle) return;
+    const entry = {
+      turn: this.currentBattle.turn,
+      actor,
+      action,
+      description: verseText ? `${description} "${verseText}"` : description,
+      verseUsed: verseId,
+      damageDealt,
+      healingDone,
+      timestamp: Date.now()
+    };
+    this.currentBattle.combatLog.push(entry);
+  }
+  /**
+   * Registra decisión de arquetipo desde combate
+   */
+  recordCombatDecision(type, description) {
+    try {
+      this.playerService.recordDecision(type, description, "COMBATE", "Decisi\xF3n tomada durante batalla espiritual");
+    } catch (error) {
+      console.error("[CombatService] Error registrando decisi\xF3n:", error);
+    }
+  }
+  /**
+   * Obtiene el estado actual de la batalla
+   */
+  getBattleState() {
+    return this.currentBattle;
+  }
+  /**
+   * Verifica si hay una batalla activa
+   */
+  isBattleActive() {
+    return this.currentBattle?.isActive ?? false;
+  }
+  /**
+   * Reinicia la batalla actual (para reintentar)
+   */
+  async retryBattle() {
+    if (!this.currentBattle) {
+      throw new Error("No hay batalla para reintentar");
+    }
+    return this.startBattle(this.currentBattle.stageId);
+  }
+};
+var globalCombatService = null;
+function createCombatService(playerService) {
+  globalCombatService = new CombatService(playerService);
+  return globalCombatService;
+}
+function getCombatService() {
+  if (!globalCombatService) {
+    throw new Error("CombatService no inicializado. Usar createCombatService() primero.");
+  }
+  return globalCombatService;
+}
 export {
+  CombatService,
   GameService,
+  createCombatService,
+  getCombatService,
   getGameService,
   initializeGame
 };
