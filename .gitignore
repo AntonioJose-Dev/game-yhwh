@@ -1,26 +1,30 @@
-# Examples 1:
-(empty)
+```
+# Build artifacts
+public/core/*.js.map
+public/services/*.js.map
+public/types/*.js.map
+public/index.js.map
 
-# Example 2 (Project with artifacts):
-# Compiled and build artifacts
-*.pyc
-__pycache__/
-*.o
-*.obj
-dist/
-build/
 # Dependencies
-.venv/
-venv/
 node_modules/
-# Logs and temp files
-*.log
-*.tmp
-*.swp
+
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
+
 # Editors
 .vscode/
 .idea/
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+```
