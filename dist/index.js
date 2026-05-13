@@ -3,11 +3,11 @@
  * Módulo principal que exporta toda la funcionalidad del sistema de arquetipos
  */
 // === CONFIGURACIÓN ===
-export { ARCHETYPE_CONFIGS, getArchetypeConfig, getArchetypesByGender, getArchetypesByDecisionType, ALL_ARCHETYPE_NAMES } from './core/archetype-configs';
+export { ARCHETYPE_CONFIGS, getArchetypeConfig, getArchetypesByGender, getArchetypesByDecisionType, ALL_ARCHETYPE_NAMES } from './core/archetype-configs.js';
 // === MOTOR DE ARQUETIPOS ===
-export { initializeArchetypeState, calculateDecisionImpact, updateArchetypeState, calculateDominantArchetype, createDecisionRecord, revealTrueName, getArchetypeStatistics, isCloseToArchetype, getMostFrequentDecisionTypes } from './core/archetype-engine';
+export { initializeArchetypeState, calculateDecisionImpact, updateArchetypeState, calculateDominantArchetype, createDecisionRecord, revealTrueName, getArchetypeStatistics, isCloseToArchetype, getMostFrequentDecisionTypes } from './core/archetype-engine.js';
 // === SISTEMA DE PISTAS NPC ===
-export { NPC_HINTS_DATABASE, checkNPCHints, markHintAsPlayed, getAllAvailableHints, getHintsByCategory, resetAllHints } from './services/npc-hint-system';
+export { NPC_HINTS_DATABASE, checkNPCHints, markHintAsPlayed, getAllAvailableHints, getHintsByCategory, resetAllHints } from './services/npc-hint-system.js';
 // === SERVICIO DE JUGADOR ===
-export { PlayerService, getPlayerService, initializePlayerService } from './services/player-service';
+export { PlayerService, getPlayerService, initializePlayerService } from './services/player-service.js';
 //# sourceMappingURL=index.js.map
