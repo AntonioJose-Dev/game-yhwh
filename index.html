@@ -5,19 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SHUV - Tu Nombre Verdadero</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <meta name="title" content="SHUV - Tu Nombre Verdadero">
-  <meta name="description" content="Descubre tu nombre verdadero en esta aventura espiritual basada en arquetipos bíblicos. Combate, explora 7 reinos y acepta o rechaza tu identidad.">
-  <meta name="telegram:channel" content="@shuv_game">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="SHUV">
-  <meta property="og:title" content="SHUV - Tu Nombre Verdadero">
-  <meta property="og:description" content="¿Aceptarás tu nombre verdadero o lo rechazarás? Una experiencia espiritual única en Telegram.">
-  <meta property="og:image" content="https://antoniojose-dev.github.io/game-yhwh/assets/og-image.png">
-  <meta property="og:url" content="https://antoniojose-dev.github.io/game-yhwh/">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="SHUV - Tu Nombre Verdadero">
-  <meta name="twitter:description" content="¿Aceptarás tu nombre verdadero o lo rechazarás? Una experiencia espiritual única en Telegram.">
-  <meta name="twitter:image" content="https://antoniojose-dev.github.io/game-yhwh/assets/og-image.png">
   <meta name="theme-color" content="#6366f1">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -100,25 +87,26 @@
     .verse-select-btn { width: 100%; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.3); border-radius: 8px; padding: 10px; color: var(--text); font-size: 12px; text-align: left; cursor: pointer; margin-bottom: 8px; transition: all 0.2s ease; }
     .verse-select-btn:last-child { margin-bottom: 0; } .verse-select-btn:active { background: rgba(99,102,241,0.4); } .verse-select-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .verse-name { font-weight: 600; margin-bottom: 2px; } .verse-meta { font-size: 10px; opacity: 0.7; }
-    .battle-log { flex: 1; overflow-y: auto; padding: 16px; background: rgba(0,0,0,0.2); margin: 16px; border-radius: 12px; max-height: 200px; }
-    .log-entry { padding: 8px 12px; margin-bottom: 8px; border-radius: 8px; font-size: 12px; line-height: 1.4; }
+    .battle-log { overflow-y: auto; padding: 12px 16px; background: rgba(0,0,0,0.2); margin: 0 16px 16px; border-radius: 12px; max-height: 160px; }
+    .log-entry { padding: 8px 12px; margin-bottom: 6px; border-radius: 8px; font-size: 12px; line-height: 1.4; }
     .log-entry.player { background: rgba(99,102,241,0.2); border-left: 3px solid var(--primary); }
     .log-entry.enemy { background: rgba(239,68,68,0.2); border-left: 3px solid var(--danger); }
     .log-entry.system { background: rgba(251,191,36,0.2); border-left: 3px solid var(--accent); }
     .log-turn { font-size: 10px; opacity: 0.6; margin-bottom: 2px; }
-    .battle-result-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .battle-result-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
     .battle-result-modal.active { display: flex; }
     .result-card { background: var(--bg); border-radius: 20px; padding: 32px; max-width: 360px; width: 100%; text-align: center; }
     .result-icon { font-size: 64px; margin-bottom: 16px; } .result-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
     .result-title.victory { color: var(--success); } .result-title.defeat { color: var(--danger); }
     .result-rewards { margin: 20px 0; text-align: left; }
-    .reward-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .reward-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; }
     .reward-item:last-child { border-bottom: none; } .result-actions { display: flex; gap: 12px; margin-top: 20px; }
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
     .modal-overlay.active { display: flex; }
     .modal-content { background: var(--bg); border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; }
     .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: var(--accent); }
     .modal-buttons { display: flex; gap: 12px; margin-top: 20px; } .modal-buttons .btn { flex: 1; }
+    .action-btns-disabled .action-btn { opacity: 0.4; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -157,10 +145,6 @@
         <div class="verse-item">
           <div class="verse-reference">Salmos 144:1</div>
           <div class="verse-text">"Bendito YHWH, mi roca, que adiestra mis manos para la batalla."</div>
-        </div>
-        <div class="verse-item verse-locked">
-          <div class="verse-reference">Bloqueado</div>
-          <div class="verse-text">Completa más etapas para desbloquear versículos.</div>
         </div>
       </div>
     </div>
@@ -210,7 +194,7 @@
       </div>
     </div>
     <div class="battle-actions">
-      <div class="action-grid">
+      <div class="action-grid" id="actionGrid">
         <button class="action-btn" onclick="selectAction('ATTACK')" id="btnAttack"><span class="action-icon">⚔️</span><span>Atacar</span></button>
         <button class="action-btn" onclick="selectAction('PRAY')" id="btnPray"><span class="action-icon">🙏</span><span>Orar</span></button>
         <button class="action-btn" onclick="selectAction('DEFEND')" id="btnDefend"><span class="action-icon">🛡️</span><span>Defender</span></button>
@@ -221,7 +205,7 @@
         <div id="versesList"></div>
         <button class="btn btn-secondary" style="margin-top: 8px;" onclick="cancelAction()">Cancelar</button>
       </div>
-      <button id="confirmActionBtn" class="btn" style="display: none;" onclick="executeAction()">Confirmar</button>
+      <button id="confirmActionBtn" class="btn" style="display: none; margin-top: 8px;" onclick="executeConfirmedAction()">Confirmar acción</button>
     </div>
     <div class="battle-log" id="battleLog"></div>
   </div>
@@ -230,10 +214,8 @@
     <div class="result-card">
       <div class="result-icon" id="resultIcon">🏆</div>
       <div class="result-title" id="resultTitle">¡Victoria!</div>
-      <div id="resultMessage">Has derrotado al enemigo</div>
-      <div class="result-rewards" id="resultRewards">
-        <div class="reward-item"><span>+10 FE</span><span>✨</span></div>
-      </div>
+      <div id="resultMessage" style="opacity:0.8; margin-bottom:8px;"></div>
+      <div class="result-rewards" id="resultRewards"></div>
       <div class="result-actions">
         <button class="btn btn-secondary" onclick="closeBattleResult()">Continuar</button>
         <button class="btn" id="retryBtn" style="display: none;" onclick="retryBattle()">Reintentar</button>
@@ -242,14 +224,16 @@
   </div>
 
   <script type="module">
-    import { initializeGame } from './dist/ui/app.js';
+    import { initializeGame, createCombatService } from './dist/ui/app.js';
 
     let currentStageId = null;
     let appState = null;
-    let currentBattle = null;
+    let combatService = null;
     let selectedAction = null;
     let selectedVerseId = null;
+    let isExecuting = false;
 
+    // ─── Telegram init ───────────────────────────────────────────
     function initTelegram() {
       if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.ready();
@@ -259,14 +243,16 @@
       return undefined;
     }
 
+    // ─── Navigation ──────────────────────────────────────────────
     function handleNavigation(screen) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      const screenMap = { 'MAP': 'mapScreen', 'PROFILE': 'profileScreen', 'VERSE_BOOK': 'verseBookScreen' };
+      const screenMap = { MAP: 'mapScreen', PROFILE: 'profileScreen', VERSE_BOOK: 'verseBookScreen' };
       document.getElementById(screenMap[screen]).classList.add('active');
       document.querySelector(`[data-screen="${screen}"]`).classList.add('active');
     }
 
+    // ─── Stage modal ─────────────────────────────────────────────
     function openStageModal(stage) {
       currentStageId = stage.id;
       document.getElementById('modalTitle').textContent = stage.name;
@@ -275,55 +261,196 @@
       document.getElementById('modalDifficulty').className = `difficulty ${stage.difficulty}`;
       document.getElementById('stageModal').classList.add('active');
     }
-
     function closeModal() {
       document.getElementById('stageModal').classList.remove('active');
-      currentStageId = null;
     }
 
+    // ─── Battle start ─────────────────────────────────────────────
     async function startBattle() {
       closeModal();
-      alert('Sistema de combate próximamente.');
+      if (!combatService || !currentStageId) return;
+      try {
+        const battle = await combatService.startBattle(currentStageId);
+        renderBattle(battle);
+        document.getElementById('battleScreen').classList.add('active');
+        cancelAction();
+      } catch (e) {
+        console.error('[Battle] Error iniciando:', e);
+        alert('Error iniciando batalla: ' + e.message);
+      }
     }
 
-    function closeBattle() { document.getElementById('battleScreen').classList.remove('active'); }
-    function closeBattleResult() { document.getElementById('battleResultModal').classList.remove('active'); }
+    // ─── Battle render ────────────────────────────────────────────
+    function renderBattle(battle) {
+      document.getElementById('battleTurnNum').textContent = battle.turn;
+      // Enemy
+      document.getElementById('enemyName').textContent = battle.enemy.name;
+      const ePct = Math.max(0, (battle.enemy.currentHp / battle.enemy.maxHp) * 100);
+      document.getElementById('enemyHpFill').style.width = ePct + '%';
+      document.getElementById('enemyHpText').textContent = `${battle.enemy.currentHp}/${battle.enemy.maxHp}`;
+      document.getElementById('weaknessBadge').style.display = battle.enemy.weaknessRevealed ? 'block' : 'none';
+      // Player
+      const pPct = Math.max(0, (battle.player.currentHp / battle.player.maxHp) * 100);
+      document.getElementById('playerHpFill').style.width = pPct + '%';
+      document.getElementById('playerHpText').textContent = `${battle.player.currentHp}/${battle.player.maxHp}`;
+      document.getElementById('defenseBadge').style.display = battle.player.isDefending ? 'block' : 'none';
+      // Log
+      const log = document.getElementById('battleLog');
+      log.innerHTML = '';
+      battle.combatLog.slice(-6).forEach(entry => {
+        const div = document.createElement('div');
+        div.className = `log-entry ${entry.actor === 'PLAYER' ? 'player' : 'enemy'}`;
+        div.innerHTML = `<div class="log-turn">Turno ${entry.turn} · ${entry.action}</div>${entry.description}`;
+        log.appendChild(div);
+      });
+      log.scrollTop = log.scrollHeight;
+    }
 
+    // ─── Action selection ─────────────────────────────────────────
     function selectAction(action) {
+      if (isExecuting) return;
       selectedAction = action;
+      selectedVerseId = null;
       document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('selected'));
-      if (action === 'PRAY') {
+      const btnMap = { ATTACK: 'btnAttack', PRAY: 'btnPray', DEFEND: 'btnDefend', FLEE: 'btnFlee' };
+      document.getElementById(btnMap[action])?.classList.add('selected');
+
+      if (action === 'ATTACK') {
+        // Mostrar panel de versículos
+        const battle = combatService?.getBattleState();
+        const versesList = document.getElementById('versesList');
+        versesList.innerHTML = '';
+        if (battle?.unlockedVerses?.length) {
+          battle.unlockedVerses.forEach(verse => {
+            const cd = battle.verseCooldowns[verse.id] || 0;
+            const btn = document.createElement('button');
+            btn.className = 'verse-select-btn';
+            btn.disabled = cd > 0;
+            btn.innerHTML = `<div class="verse-name">${verse.name}${cd > 0 ? ` (${cd} turnos)` : ''}</div><div class="verse-meta">${verse.reference?.book || ''} · Daño base: ${verse.baseDamage}</div>`;
+            btn.onclick = () => selectVerse(verse.id);
+            versesList.appendChild(btn);
+          });
+        } else {
+          versesList.innerHTML = '<div style="opacity:0.6;font-size:12px;">No hay versículos disponibles aún.</div>';
+        }
         document.getElementById('versesPanel').style.display = 'block';
         document.getElementById('confirmActionBtn').style.display = 'none';
       } else {
         document.getElementById('versesPanel').style.display = 'none';
         document.getElementById('confirmActionBtn').style.display = 'block';
+        document.getElementById('confirmActionBtn').textContent =
+          action === 'PRAY' ? '🙏 Orar' :
+          action === 'DEFEND' ? '🛡️ Defender' :
+          action === 'FLEE' ? '🏃 Intentar huir' : 'Confirmar';
       }
-      const btnMap = { ATTACK: 'btnAttack', PRAY: 'btnPray', DEFEND: 'btnDefend', FLEE: 'btnFlee' };
-      document.getElementById(btnMap[action])?.classList.add('selected');
+    }
+
+    function selectVerse(verseId) {
+      selectedVerseId = verseId;
+      document.querySelectorAll('.verse-select-btn').forEach(b => b.style.borderColor = '');
+      event.currentTarget.style.borderColor = 'var(--accent)';
+      document.getElementById('versesPanel').style.display = 'block';
+      document.getElementById('confirmActionBtn').style.display = 'block';
+      document.getElementById('confirmActionBtn').textContent = '⚔️ Atacar con versículo';
     }
 
     function cancelAction() {
       selectedAction = null;
+      selectedVerseId = null;
       document.getElementById('versesPanel').style.display = 'none';
       document.getElementById('confirmActionBtn').style.display = 'none';
       document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('selected'));
     }
 
-    function executeAction() { cancelAction(); }
-    function retryBattle() { closeBattleResult(); }
+    // ─── Execute action ───────────────────────────────────────────
+    async function executeConfirmedAction() {
+      if (!selectedAction || isExecuting || !combatService) return;
+      if (selectedAction === 'ATTACK' && !selectedVerseId) {
+        alert('Selecciona un versículo primero.');
+        return;
+      }
+      isExecuting = true;
+      document.getElementById('actionGrid').classList.add('action-btns-disabled');
+      document.getElementById('confirmActionBtn').disabled = true;
+      try {
+        const result = await combatService.executeAction(selectedAction, selectedVerseId || undefined);
+        cancelAction();
+        renderBattle(result.battleState);
 
-    function handleResetGame() {
-      if (confirm('¿Estás seguro de que quieres reiniciar todo tu progreso?')) {
-        localStorage.removeItem('shuv_player_v1');
-        location.reload();
+        // Shake animations
+        if (selectedAction === 'ATTACK') {
+          const spr = document.getElementById('enemySprite');
+          spr.classList.add('hit');
+          setTimeout(() => spr.classList.remove('hit'), 500);
+        }
+        if (result.battleState.player.currentHp < result.battleState.player.maxHp) {
+          const spr = document.getElementById('playerSprite');
+          spr.classList.add('hit');
+          setTimeout(() => spr.classList.remove('hit'), 500);
+        }
+
+        if (!result.battleState.isActive) {
+          const victory = result.battleState.enemy.currentHp <= 0;
+          setTimeout(() => showBattleResult(victory, result.battleState), 800);
+        }
+      } catch (e) {
+        console.error('[Battle] Error ejecutando acción:', e);
+      } finally {
+        isExecuting = false;
+        document.getElementById('actionGrid').classList.remove('action-btns-disabled');
+        document.getElementById('confirmActionBtn').disabled = false;
       }
     }
 
+    // ─── Battle result ────────────────────────────────────────────
+    function showBattleResult(victory, battle) {
+      document.getElementById('resultIcon').textContent = victory ? '🏆' : '💀';
+      document.getElementById('resultTitle').textContent = victory ? '¡Victoria!' : 'Derrota...';
+      document.getElementById('resultTitle').className = `result-title ${victory ? 'victory' : 'defeat'}`;
+      document.getElementById('resultMessage').textContent = victory
+        ? 'Has vencido al enemigo. ¡La FE crece!'
+        : 'Has caído en la batalla, pero YHWH te da otra oportunidad.';
+      document.getElementById('retryBtn').style.display = victory ? 'none' : 'block';
+      const rewards = document.getElementById('resultRewards');
+      rewards.innerHTML = '';
+      if (victory) {
+        const log = battle.combatLog.filter(e => e.actor === 'PLAYER' && e.action === 'Victoria');
+        const div = document.createElement('div');
+        div.className = 'reward-item';
+        div.innerHTML = '<span>FE ganada</span><span>+5 ✨</span>';
+        rewards.appendChild(div);
+      }
+      document.getElementById('battleResultModal').classList.add('active');
+    }
+
+    function closeBattleResult() {
+      document.getElementById('battleResultModal').classList.remove('active');
+      document.getElementById('battleScreen').classList.remove('active');
+      // Refrescar UI del mapa
+      if (appState) updateUI(appState);
+    }
+
+    function closeBattle() {
+      document.getElementById('battleScreen').classList.remove('active');
+      cancelAction();
+    }
+
+    async function retryBattle() {
+      document.getElementById('battleResultModal').classList.remove('active');
+      if (combatService) {
+        try {
+          const battle = await combatService.retryBattle();
+          renderBattle(battle);
+          cancelAction();
+        } catch (e) { console.error(e); }
+      }
+    }
+
+    // ─── Map render ───────────────────────────────────────────────
     function renderMap(stages) {
       const mapPath = document.getElementById('mapPath');
       mapPath.innerHTML = '';
-      stages.forEach((stage) => {
+      stages.forEach(stage => {
         const node = document.createElement('div');
         node.className = `stage-node ${stage.status.toLowerCase()}`;
         node.textContent = stage.id;
@@ -339,19 +466,27 @@
     }
 
     function updateUI(state) {
-      if (!state.playerProfile) return;
-      const profile = state.playerProfile;
-      document.getElementById('feFill').style.width = `${profile.feLevel}%`;
-      document.getElementById('feValue').textContent = profile.feLevel;
-      document.getElementById('profileName').textContent = profile.humanName;
-      document.getElementById('profileArchetype').textContent = profile.trueName || 'Arquetipo no revelado';
-      document.getElementById('statBattlesWon').textContent = profile.stats.battlesWon;
-      document.getElementById('statDecisions').textContent = profile.stats.decisionsMade;
-      document.getElementById('statStage').textContent = profile.currentStage;
-      document.getElementById('statKingdoms').textContent = profile.kingdomsLiberated.length;
+      if (!state?.playerProfile) return;
+      const p = state.playerProfile;
+      document.getElementById('feFill').style.width = `${p.feLevel}%`;
+      document.getElementById('feValue').textContent = p.feLevel;
+      document.getElementById('profileName').textContent = p.humanName;
+      document.getElementById('profileArchetype').textContent = p.trueName || 'Arquetipo no revelado';
+      document.getElementById('statBattlesWon').textContent = p.stats.battlesWon;
+      document.getElementById('statDecisions').textContent = p.stats.decisionsMade;
+      document.getElementById('statStage').textContent = p.currentStage;
+      document.getElementById('statKingdoms').textContent = p.kingdomsLiberated?.length ?? 0;
       renderMap(Array.from(state.stages.values()));
     }
 
+    function handleResetGame() {
+      if (confirm('¿Estás seguro de que quieres reiniciar todo tu progreso?')) {
+        localStorage.removeItem('shuv_player_v1');
+        location.reload();
+      }
+    }
+
+    // ─── Expose globals ───────────────────────────────────────────
     window.handleNavigation = handleNavigation;
     window.openStageModal = openStageModal;
     window.closeModal = closeModal;
@@ -359,15 +494,19 @@
     window.closeBattle = closeBattle;
     window.closeBattleResult = closeBattleResult;
     window.selectAction = selectAction;
+    window.selectVerse = selectVerse;
     window.cancelAction = cancelAction;
-    window.executeAction = executeAction;
+    window.executeConfirmedAction = executeConfirmedAction;
     window.retryBattle = retryBattle;
     window.handleResetGame = handleResetGame;
 
+    // ─── Init ─────────────────────────────────────────────────────
     async function initApp() {
       const telegramId = initTelegram();
       try {
-        appState = await initializeGame(telegramId);
+        const { gameService, state } = await initializeGame(telegramId);
+        appState = state;
+        combatService = createCombatService(gameService.getPlayerService());
         updateUI(appState);
         document.getElementById('loadingScreen').style.display = 'none';
         document.getElementById('appContainer').style.display = 'block';
@@ -381,15 +520,14 @@
         `;
       }
     }
-
     initApp();
   </script>
   <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/game-yhwh/public/sw.js")
-          .then(reg => console.log("SW registrado:", reg.scope))
-          .catch(err => console.log("SW error:", err));
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/game-yhwh/public/sw.js')
+          .then(reg => console.log('SW registrado:', reg.scope))
+          .catch(err => console.log('SW error:', err));
       });
     }
   </script>
