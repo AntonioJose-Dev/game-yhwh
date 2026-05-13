@@ -224,7 +224,8 @@
   </div>
 
   <script type="module">
-    import { initializeGame, createCombatService } from './dist/ui/app.js';
+    // v20260513 — cache bust para Telegram
+    import { initializeGame, createCombatService } from './dist/ui/app.js?v=20260513b';
 
     let currentStageId = null;
     let appState = null;
@@ -233,7 +234,6 @@
     let selectedVerseId = null;
     let isExecuting = false;
 
-    // ─── Telegram init ───────────────────────────────────────────
     function initTelegram() {
       if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.ready();
@@ -243,7 +243,6 @@
       return undefined;
     }
 
-    // ─── Navigation ──────────────────────────────────────────────
     function handleNavigation(screen) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -252,7 +251,6 @@
       document.querySelector(`[data-screen="${screen}"]`).classList.add('active');
     }
 
-    // ─── Stage modal ─────────────────────────────────────────────
     function openStageModal(stage) {
       currentStageId = stage.id;
       document.getElementById('modalTitle').textContent = stage.name;
@@ -261,11 +259,8 @@
       document.getElementById('modalDifficulty').className = `difficulty ${stage.difficulty}`;
       document.getElementById('stageModal').classList.add('active');
     }
-    function closeModal() {
-      document.getElementById('stageModal').classList.remove('active');
-    }
+    function closeModal() { document.getElementById('stageModal').classList.remove('active'); }
 
-    // ─── Battle start ─────────────────────────────────────────────
     async function startBattle() {
       closeModal();
       if (!combatService || !currentStageId) return;
@@ -280,21 +275,17 @@
       }
     }
 
-    // ─── Battle render ────────────────────────────────────────────
     function renderBattle(battle) {
       document.getElementById('battleTurnNum').textContent = battle.turn;
-      // Enemy
       document.getElementById('enemyName').textContent = battle.enemy.name;
       const ePct = Math.max(0, (battle.enemy.currentHp / battle.enemy.maxHp) * 100);
       document.getElementById('enemyHpFill').style.width = ePct + '%';
       document.getElementById('enemyHpText').textContent = `${battle.enemy.currentHp}/${battle.enemy.maxHp}`;
       document.getElementById('weaknessBadge').style.display = battle.enemy.weaknessRevealed ? 'block' : 'none';
-      // Player
       const pPct = Math.max(0, (battle.player.currentHp / battle.player.maxHp) * 100);
       document.getElementById('playerHpFill').style.width = pPct + '%';
       document.getElementById('playerHpText').textContent = `${battle.player.currentHp}/${battle.player.maxHp}`;
       document.getElementById('defenseBadge').style.display = battle.player.isDefending ? 'block' : 'none';
-      // Log
       const log = document.getElementById('battleLog');
       log.innerHTML = '';
       battle.combatLog.slice(-6).forEach(entry => {
@@ -306,7 +297,6 @@
       log.scrollTop = log.scrollHeight;
     }
 
-    // ─── Action selection ─────────────────────────────────────────
     function selectAction(action) {
       if (isExecuting) return;
       selectedAction = action;
@@ -314,9 +304,7 @@
       document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('selected'));
       const btnMap = { ATTACK: 'btnAttack', PRAY: 'btnPray', DEFEND: 'btnDefend', FLEE: 'btnFlee' };
       document.getElementById(btnMap[action])?.classList.add('selected');
-
       if (action === 'ATTACK') {
-        // Mostrar panel de versículos
         const battle = combatService?.getBattleState();
         const versesList = document.getElementById('versesList');
         versesList.innerHTML = '';
@@ -349,7 +337,6 @@
       selectedVerseId = verseId;
       document.querySelectorAll('.verse-select-btn').forEach(b => b.style.borderColor = '');
       event.currentTarget.style.borderColor = 'var(--accent)';
-      document.getElementById('versesPanel').style.display = 'block';
       document.getElementById('confirmActionBtn').style.display = 'block';
       document.getElementById('confirmActionBtn').textContent = '⚔️ Atacar con versículo';
     }
@@ -362,13 +349,9 @@
       document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('selected'));
     }
 
-    // ─── Execute action ───────────────────────────────────────────
     async function executeConfirmedAction() {
       if (!selectedAction || isExecuting || !combatService) return;
-      if (selectedAction === 'ATTACK' && !selectedVerseId) {
-        alert('Selecciona un versículo primero.');
-        return;
-      }
+      if (selectedAction === 'ATTACK' && !selectedVerseId) { alert('Selecciona un versículo primero.'); return; }
       isExecuting = true;
       document.getElementById('actionGrid').classList.add('action-btns-disabled');
       document.getElementById('confirmActionBtn').disabled = true;
@@ -376,33 +359,26 @@
         const result = await combatService.executeAction(selectedAction, selectedVerseId || undefined);
         cancelAction();
         renderBattle(result.battleState);
-
-        // Shake animations
         if (selectedAction === 'ATTACK') {
           const spr = document.getElementById('enemySprite');
-          spr.classList.add('hit');
-          setTimeout(() => spr.classList.remove('hit'), 500);
+          spr.classList.add('hit'); setTimeout(() => spr.classList.remove('hit'), 500);
         }
         if (result.battleState.player.currentHp < result.battleState.player.maxHp) {
           const spr = document.getElementById('playerSprite');
-          spr.classList.add('hit');
-          setTimeout(() => spr.classList.remove('hit'), 500);
+          spr.classList.add('hit'); setTimeout(() => spr.classList.remove('hit'), 500);
         }
-
         if (!result.battleState.isActive) {
           const victory = result.battleState.enemy.currentHp <= 0;
           setTimeout(() => showBattleResult(victory, result.battleState), 800);
         }
-      } catch (e) {
-        console.error('[Battle] Error ejecutando acción:', e);
-      } finally {
+      } catch (e) { console.error('[Battle] Error:', e); }
+      finally {
         isExecuting = false;
         document.getElementById('actionGrid').classList.remove('action-btns-disabled');
         document.getElementById('confirmActionBtn').disabled = false;
       }
     }
 
-    // ─── Battle result ────────────────────────────────────────────
     function showBattleResult(victory, battle) {
       document.getElementById('resultIcon').textContent = victory ? '🏆' : '💀';
       document.getElementById('resultTitle').textContent = victory ? '¡Victoria!' : 'Derrota...';
@@ -412,41 +388,21 @@
         : 'Has caído en la batalla, pero YHWH te da otra oportunidad.';
       document.getElementById('retryBtn').style.display = victory ? 'none' : 'block';
       const rewards = document.getElementById('resultRewards');
-      rewards.innerHTML = '';
-      if (victory) {
-        const log = battle.combatLog.filter(e => e.actor === 'PLAYER' && e.action === 'Victoria');
-        const div = document.createElement('div');
-        div.className = 'reward-item';
-        div.innerHTML = '<span>FE ganada</span><span>+5 ✨</span>';
-        rewards.appendChild(div);
-      }
+      rewards.innerHTML = victory ? '<div class="reward-item"><span>FE ganada</span><span>+5 ✨</span></div>' : '';
       document.getElementById('battleResultModal').classList.add('active');
     }
 
     function closeBattleResult() {
       document.getElementById('battleResultModal').classList.remove('active');
       document.getElementById('battleScreen').classList.remove('active');
-      // Refrescar UI del mapa
       if (appState) updateUI(appState);
     }
-
-    function closeBattle() {
-      document.getElementById('battleScreen').classList.remove('active');
-      cancelAction();
-    }
-
+    function closeBattle() { document.getElementById('battleScreen').classList.remove('active'); cancelAction(); }
     async function retryBattle() {
       document.getElementById('battleResultModal').classList.remove('active');
-      if (combatService) {
-        try {
-          const battle = await combatService.retryBattle();
-          renderBattle(battle);
-          cancelAction();
-        } catch (e) { console.error(e); }
-      }
+      if (combatService) { try { const b = await combatService.retryBattle(); renderBattle(b); cancelAction(); } catch(e){} }
     }
 
-    // ─── Map render ───────────────────────────────────────────────
     function renderMap(stages) {
       const mapPath = document.getElementById('mapPath');
       mapPath.innerHTML = '';
@@ -481,12 +437,10 @@
 
     function handleResetGame() {
       if (confirm('¿Estás seguro de que quieres reiniciar todo tu progreso?')) {
-        localStorage.removeItem('shuv_player_v1');
-        location.reload();
+        localStorage.removeItem('shuv_player_v1'); location.reload();
       }
     }
 
-    // ─── Expose globals ───────────────────────────────────────────
     window.handleNavigation = handleNavigation;
     window.openStageModal = openStageModal;
     window.closeModal = closeModal;
@@ -500,7 +454,6 @@
     window.retryBattle = retryBattle;
     window.handleResetGame = handleResetGame;
 
-    // ─── Init ─────────────────────────────────────────────────────
     async function initApp() {
       const telegramId = initTelegram();
       try {
@@ -514,9 +467,9 @@
       } catch (error) {
         console.error('Error inicializando:', error);
         document.getElementById('loadingScreen').innerHTML = `
-          <p style="color: var(--accent); font-size: 18px; margin-bottom: 16px;">⚔️ SHUV</p>
-          <p style="margin-bottom: 8px; opacity: 0.7;">Error: ${error.message}</p>
-          <button class="btn" style="margin-top: 16px; max-width: 200px;" onclick="location.reload()">Reintentar</button>
+          <p style="color:var(--accent);font-size:18px;margin-bottom:16px;">⚔️ SHUV</p>
+          <p style="margin-bottom:8px;opacity:0.7;">Error: ${error.message}</p>
+          <button class="btn" style="margin-top:16px;max-width:200px;" onclick="location.reload()">Reintentar</button>
         `;
       }
     }
