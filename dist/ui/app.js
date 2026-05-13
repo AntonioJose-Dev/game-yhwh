@@ -1456,9 +1456,6 @@ var GameService = class {
       telegramId: void 0
     };
   }
-  /**
-   * Inicializa el juego cargando o creando el estado del jugador
-   */
   async initialize(telegramId) {
     this.state.isLoading = true;
     this.state.telegramId = telegramId;
@@ -1483,15 +1480,11 @@ var GameService = class {
       return this.state;
     }
   }
-  /**
-   * Actualiza el estado interno desde los datos del jugador
-   */
   updateStateFromPlayer(playerState) {
-    const playerService = this.playerService;
     const profile = {
       humanName: playerState.humanName,
       trueName: playerState.trueName,
-      archetypeTitle: playerState.trueName ? playerService.getState()?.archetypeState.scores[playerState.trueName]?.score || 0 > 0 ? playerState.trueName : null : null,
+      archetypeTitle: playerState.trueName ? playerState.trueName : null,
       acceptedName: playerState.acceptedName,
       currentAct: playerState.currentAct,
       kingdomsLiberated: playerState.kingdomsLiberated,
@@ -1500,38 +1493,18 @@ var GameService = class {
       completedStages: playerState.completedStages,
       stats: playerState.stats
     };
-    const stageMap = calculateStageStatus(
-      playerState.currentStage,
-      playerState.completedStages
-    );
+    const stageMap = calculateStageStatus(playerState.currentStage, playerState.completedStages);
     const isRevealed = playerState.archetypeState.isRevealed;
     const theme = getThemeForPlayer(playerState.acceptedName, isRevealed);
-    this.state = {
-      ...this.state,
-      playerProfile: profile,
-      stages: stageMap,
-      theme,
-      error: null
-    };
+    this.state = { ...this.state, playerProfile: profile, stages: stageMap, theme, error: null };
   }
-  /**
-   * Navega a una pantalla específica
-   */
   navigateTo(screen) {
     this.state.currentScreen = screen;
     return this.state;
   }
-  /**
-   * Registra una decisión del jugador
-   */
   async recordDecision(decisionType, description, kingdom, context) {
     try {
-      const result = this.playerService.recordDecision(
-        decisionType,
-        description,
-        kingdom,
-        context
-      );
+      this.playerService.recordDecision(decisionType, description, kingdom, context);
       const currentState = await loadPlayerProgress();
       if (currentState) {
         currentState.stats.decisionsMade += 1;
@@ -1544,27 +1517,16 @@ var GameService = class {
       throw error;
     }
   }
-  /**
-   * Completa una etapa
-   */
   async completeStage(stageId, battleWon) {
     try {
       const currentState = await loadPlayerProgress();
-      if (!currentState) {
-        throw new Error("No hay estado del jugador");
-      }
+      if (!currentState) throw new Error("No hay estado del jugador");
       if (battleWon) {
-        if (!currentState.completedStages.includes(stageId)) {
-          currentState.completedStages.push(stageId);
-        }
+        if (!currentState.completedStages.includes(stageId)) currentState.completedStages.push(stageId);
         currentState.stats.battlesWon += 1;
-        if (stageId === currentState.currentStage) {
-          currentState.currentStage = stageId + 1;
-        }
+        if (stageId === currentState.currentStage) currentState.currentStage = stageId + 1;
         const stage = getStageById(stageId);
-        if (stage?.rewards?.feBonus) {
-          currentState.feLevel = Math.min(100, currentState.feLevel + stage.rewards.feBonus);
-        }
+        if (stage?.rewards?.feBonus) currentState.feLevel = Math.min(100, currentState.feLevel + stage.rewards.feBonus);
       } else {
         currentState.stats.battlesLost += 1;
       }
@@ -1576,9 +1538,6 @@ var GameService = class {
       throw error;
     }
   }
-  /**
-   * Revela el nombre verdadero del jugador
-   */
   async revealTrueName() {
     const result = this.playerService.revealTrueName();
     const currentState = await loadPlayerProgress();
@@ -1589,9 +1548,6 @@ var GameService = class {
     }
     return result;
   }
-  /**
-   * El jugador acepta o rechaza su nombre
-   */
   async acceptOrRejectName(accept) {
     this.playerService.acceptOrRejectName(accept);
     const currentState = await loadPlayerProgress();
@@ -1602,21 +1558,16 @@ var GameService = class {
     }
     return this.state;
   }
-  /**
-   * Obtiene pistas disponibles para un NPC
-   */
   getNPCHints(npcId) {
     return this.playerService.getAvailableHintsForNPC(npcId);
   }
-  /**
-   * Obtiene el estado actual de la app
-   */
+  /** Expone el PlayerService para uso en CombatService */
+  getPlayerService() {
+    return this.playerService;
+  }
   getState() {
     return { ...this.state };
   }
-  /**
-   * Fuerza una recarga del estado desde persistencia
-   */
   async refreshState() {
     const currentState = await loadPlayerProgress();
     if (currentState) {
@@ -1625,31 +1576,24 @@ var GameService = class {
     }
     return this.state;
   }
-  /**
-   * Resetea todo el progreso (nuevo juego)
-   */
   async resetGame() {
     await this.persistenceService.clearState();
     this.playerService.resetProgress();
     return this.initialize(this.state.telegramId);
   }
-  /**
-   * Exporta el estado completo para debugging
-   */
   exportState() {
     return this.playerService.exportState();
   }
 };
 var globalGameService = null;
 function getGameService() {
-  if (!globalGameService) {
-    globalGameService = new GameService();
-  }
+  if (!globalGameService) globalGameService = new GameService();
   return globalGameService;
 }
 async function initializeGame(telegramId) {
   globalGameService = new GameService();
-  return globalGameService.initialize(telegramId);
+  const state = await globalGameService.initialize(telegramId);
+  return { gameService: globalGameService, state };
 }
 
 // src/core/verses-config.ts
