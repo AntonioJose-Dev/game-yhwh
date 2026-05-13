@@ -183,17 +183,6 @@ var ARCHETYPE_CONFIGS = {
     biblicalReference: 'Jueces 5:24-27 - "Entre las mujeres sea bendita Jael." Clav\xF3 la estaca en la sien.'
   }
 };
-function getArchetypeConfig(name) {
-  return ARCHETYPE_CONFIGS[name];
-}
-function getArchetypesByGender(gender) {
-  return Object.values(ARCHETYPE_CONFIGS).filter((config) => config.gender === gender);
-}
-function getArchetypesByDecisionType(decisionType) {
-  return Object.values(ARCHETYPE_CONFIGS).filter(
-    (config) => config.primaryDecisionTypes.includes(decisionType)
-  );
-}
 var ALL_ARCHETYPE_NAMES = Object.keys(ARCHETYPE_CONFIGS);
 
 // src/core/archetype-engine.ts
@@ -344,20 +333,6 @@ function getArchetypeStatistics(state) {
     mostActiveArchetype: mostActive,
     leastActiveArchetype: leastActive
   };
-}
-function isCloseToArchetype(state, targetArchetype, threshold = 0.8) {
-  if (!state.dominantArchetype) return false;
-  const targetScore = state.scores[targetArchetype].score;
-  const dominantScore = state.scores[state.dominantArchetype].score;
-  if (dominantScore === 0) return false;
-  return targetScore / dominantScore >= threshold;
-}
-function getMostFrequentDecisionTypes(decisionLog, limit = 3) {
-  const counts = {};
-  for (const decision of decisionLog) {
-    counts[decision.decisionType] = (counts[decision.decisionType] || 0) + 1;
-  }
-  return Object.entries(counts).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count).slice(0, limit);
 }
 
 // src/services/npc-hint-system.ts
@@ -714,37 +689,6 @@ function checkNPCHints(npcId, decisionLog, hintsState) {
   }
   return availableHints;
 }
-function markHintAsPlayed(hintsState, hintId, timestamp = Date.now()) {
-  return hintsState.map((hint) => {
-    if (hint.id === hintId) {
-      return {
-        ...hint,
-        isPlayed: true,
-        playedAt: timestamp
-      };
-    }
-    return hint;
-  });
-}
-function getAllAvailableHints(decisionLog, hintsState) {
-  const allNpcIds = [...new Set(hintsState.map((h) => h.npcId))];
-  let allAvailable = [];
-  for (const npcId of allNpcIds) {
-    const available = checkNPCHints(npcId, decisionLog, hintsState);
-    allAvailable = [...allAvailable, ...available];
-  }
-  return allAvailable;
-}
-function getHintsByCategory(category, hintsState) {
-  return hintsState.filter((h) => h.hintCategory === category);
-}
-function resetAllHints(hintsState) {
-  return hintsState.map((hint) => ({
-    ...hint,
-    isPlayed: false,
-    playedAt: void 0
-  }));
-}
 
 // src/services/player-service.ts
 var PlayerService = class {
@@ -1002,32 +946,738 @@ function getPlayerService() {
   }
   return globalPlayerService;
 }
-function initializePlayerService(playerId) {
-  globalPlayerService = new PlayerService(playerId);
-  return globalPlayerService;
+
+// src/persistence/telegram-storage.ts
+function createInitialExtendedState(baseState, telegramId) {
+  return {
+    ...baseState,
+    currentStage: 1,
+    completedStages: [],
+    feLevel: 50,
+    // Nivel inicial de FE
+    nameAccepted: null,
+    inventory: {
+      scrolls: [],
+      armorPieces: [],
+      oil: 3,
+      mana: 100
+    },
+    stats: {
+      battlesWon: 0,
+      battlesLost: 0,
+      decisionsMade: 0,
+      playTimeSeconds: 0
+    }
+  };
+}
+var PersistenceService = class {
+  constructor() {
+    this.storageKey = "shuv_player_v1";
+    this.cloudStorage = null;
+    this.isTelegramAvailable = false;
+    this.checkTelegramAvailability();
+  }
+  /**
+   * Verifica si Telegram WebApp está disponible
+   */
+  checkTelegramAvailability() {
+    if (typeof window !== "undefined" && window.Telegram?.WebApp?.CloudStorage) {
+      this.cloudStorage = window.Telegram.WebApp.CloudStorage;
+      this.isTelegramAvailable = true;
+      console.log("[Persistence] Telegram CloudStorage disponible");
+    } else {
+      this.isTelegramAvailable = false;
+      console.log("[Persistence] Usando localStorage (fallback)");
+    }
+  }
+  /**
+   * Guarda el estado del jugador
+   */
+  async saveState(state) {
+    const serialized = JSON.stringify(state);
+    return new Promise((resolve) => {
+      if (this.isTelegramAvailable && this.cloudStorage) {
+        this.cloudStorage.setItem(this.storageKey, serialized, (error) => {
+          if (error) {
+            console.error("[Persistence] Error guardando en CloudStorage:", error);
+            this.saveToLocalStorage(serialized);
+            resolve(false);
+          } else {
+            console.log("[Persistence] Estado guardado en CloudStorage");
+            resolve(true);
+          }
+        });
+      } else {
+        this.saveToLocalStorage(serialized);
+        resolve(false);
+      }
+    });
+  }
+  /**
+   * Carga el estado del jugador
+   */
+  async loadState() {
+    return new Promise((resolve) => {
+      if (this.isTelegramAvailable && this.cloudStorage) {
+        this.cloudStorage.getItem(this.storageKey, (error, value) => {
+          if (error || !value) {
+            console.warn("[Persistence] No se encontr\xF3 estado en CloudStorage");
+            const localState = this.loadFromLocalStorage();
+            resolve(localState);
+          } else {
+            try {
+              const state = JSON.parse(value);
+              console.log("[Persistence] Estado cargado desde CloudStorage");
+              resolve(state);
+            } catch (e) {
+              console.error("[Persistence] Error parseando estado:", e);
+              resolve(this.loadFromLocalStorage());
+            }
+          }
+        });
+      } else {
+        resolve(this.loadFromLocalStorage());
+      }
+    });
+  }
+  /**
+   * Guarda en localStorage como fallback
+   */
+  saveToLocalStorage(serialized) {
+    try {
+      localStorage.setItem(this.storageKey, serialized);
+      console.log("[Persistence] Estado guardado en localStorage");
+    } catch (error) {
+      console.error("[Persistence] Error guardando en localStorage:", error);
+    }
+  }
+  /**
+   * Carga desde localStorage como fallback
+   */
+  loadFromLocalStorage() {
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      if (stored) {
+        const state = JSON.parse(stored);
+        console.log("[Persistence] Estado cargado desde localStorage");
+        return state;
+      }
+      return null;
+    } catch (error) {
+      console.error("[Persistence] Error cargando desde localStorage:", error);
+      return null;
+    }
+  }
+  /**
+   * Elimina el estado guardado (reset de progreso)
+   */
+  async clearState() {
+    return new Promise((resolve) => {
+      if (this.isTelegramAvailable && this.cloudStorage) {
+        this.cloudStorage.removeItem(this.storageKey, (error) => {
+          if (error) {
+            console.error("[Persistence] Error eliminando en CloudStorage:", error);
+          }
+          localStorage.removeItem(this.storageKey);
+          resolve();
+        });
+      } else {
+        localStorage.removeItem(this.storageKey);
+        resolve();
+      }
+    });
+  }
+  /**
+   * Verifica si existe un estado guardado
+   */
+  async hasSavedState() {
+    return new Promise((resolve) => {
+      if (this.isTelegramAvailable && this.cloudStorage) {
+        this.cloudStorage.getItem(this.storageKey, (error, value) => {
+          if (value) {
+            resolve(true);
+          } else {
+            const local = localStorage.getItem(this.storageKey);
+            resolve(!!local);
+          }
+        });
+      } else {
+        const local = localStorage.getItem(this.storageKey);
+        resolve(!!local);
+      }
+    });
+  }
+  /**
+   * Obtiene información del almacenamiento
+   */
+  getStorageInfo() {
+    return {
+      isTelegram: this.isTelegramAvailable,
+      available: this.isTelegramAvailable || typeof localStorage !== "undefined"
+    };
+  }
+};
+var globalPersistenceService = null;
+function getPersistenceService() {
+  if (!globalPersistenceService) {
+    globalPersistenceService = new PersistenceService();
+  }
+  return globalPersistenceService;
+}
+async function loadPlayerProgress() {
+  const persistence = getPersistenceService();
+  return persistence.loadState();
+}
+
+// src/types/ui-types.ts
+var SPIRITUAL_THEMES = {
+  DEFAULT: {
+    primaryColor: "#6366f1",
+    secondaryColor: "#8b5cf6",
+    backgroundColor: "#0f172a",
+    textColor: "#f8fafc",
+    accentColor: "#fbbf24"
+  },
+  LIGHT_REVEALED: {
+    primaryColor: "#fbbf24",
+    secondaryColor: "#f59e0b",
+    backgroundColor: "#1e293b",
+    textColor: "#fef3c7",
+    accentColor: "#ffffff"
+  },
+  DARK_REJECTED: {
+    primaryColor: "#7c3aed",
+    secondaryColor: "#5b21b6",
+    backgroundColor: "#020617",
+    textColor: "#e2e8f0",
+    accentColor: "#dc2626"
+  }
+};
+function getThemeForPlayer(nameAccepted, isRevealed) {
+  if (!isRevealed || nameAccepted === null) {
+    return SPIRITUAL_THEMES.DEFAULT;
+  }
+  if (nameAccepted) {
+    return SPIRITUAL_THEMES.LIGHT_REVEALED;
+  } else {
+    return SPIRITUAL_THEMES.DARK_REJECTED;
+  }
+}
+
+// src/core/kingdoms-config.ts
+var KINGDOMS_CONFIG = {
+  ORGULLO: {
+    id: "ORGULLO",
+    name: "Reino del Orgullo",
+    description: "La fortaleza del ego donde la soberan\xEDa ciega los ojos",
+    stages: [
+      {
+        id: 1,
+        name: "El Despertar",
+        description: "Primeros pasos hacia la humildad",
+        kingdom: "ORGULLO",
+        difficulty: "EASY",
+        status: "AVAILABLE",
+        position: { x: 50, y: 90 },
+        rewards: { feBonus: 5 }
+      },
+      {
+        id: 2,
+        name: "Espejo Roto",
+        description: "Confronta tu propio reflejo",
+        kingdom: "ORGULLO",
+        difficulty: "MEDIUM",
+        status: "LOCKED",
+        position: { x: 30, y: 75 },
+        rewards: { feBonus: 10, scroll: "humildad" }
+      },
+      {
+        id: 3,
+        name: "Ca\xEDda del Soberbio",
+        description: "Batalla contra el pr\xEDncipe del orgullo",
+        kingdom: "ORGULLO",
+        difficulty: "BOSS",
+        status: "LOCKED",
+        position: { x: 50, y: 50 },
+        rewards: { feBonus: 25, armorPiece: "humildad" }
+      }
+    ]
+  },
+  AVARICIA: {
+    id: "AVARICIA",
+    name: "Reino de la Avaricia",
+    description: "Las minas doradas donde el coraz\xF3n se esclaviza",
+    stages: [
+      {
+        id: 4,
+        name: "Entrada a las Minas",
+        description: "El brillo cegador del oro",
+        kingdom: "AVARICIA",
+        difficulty: "EASY",
+        status: "LOCKED",
+        position: { x: 70, y: 90 },
+        rewards: { feBonus: 5 }
+      },
+      {
+        id: 5,
+        name: "El Mercader",
+        description: "Decide qu\xE9 vale realmente la pena",
+        kingdom: "AVARICIA",
+        difficulty: "MEDIUM",
+        status: "LOCKED",
+        position: { x: 80, y: 70 },
+        rewards: { feBonus: 10 }
+      },
+      {
+        id: 6,
+        name: "Tesoros del Cielo",
+        description: "Batalla contra el guardi\xE1n de la codicia",
+        kingdom: "AVARICIA",
+        difficulty: "BOSS",
+        status: "LOCKED",
+        position: { x: 70, y: 50 },
+        rewards: { feBonus: 25, scroll: "generosidad" }
+      }
+    ]
+  },
+  LUJuria: {
+    id: "LUJURIA",
+    name: "Reino de la Lujuria",
+    description: "Los jardines del deseo que marchitan el alma",
+    stages: [
+      {
+        id: 7,
+        name: "Sendero de Rosas",
+        description: "Belleza que enga\xF1a",
+        kingdom: "LUJURIA",
+        difficulty: "EASY",
+        status: "LOCKED",
+        position: { x: 20, y: 85 },
+        rewards: { feBonus: 5 }
+      },
+      {
+        id: 8,
+        name: "Fuente Cristalina",
+        description: "Agua que no sacia la sed",
+        kingdom: "LUJURIA",
+        difficulty: "MEDIUM",
+        status: "LOCKED",
+        position: { x: 15, y: 65 },
+        rewards: { feBonus: 10 }
+      },
+      {
+        id: 9,
+        name: "Pureza Restaurada",
+        description: "Victoria sobre la carne",
+        kingdom: "LUJURIA",
+        difficulty: "BOSS",
+        status: "LOCKED",
+        position: { x: 20, y: 45 },
+        rewards: { feBonus: 25, armorPiece: "pureza" }
+      }
+    ]
+  },
+  IRA: {
+    id: "IRA",
+    name: "Reino de la Ira",
+    description: "El volc\xE1n donde hierve la furia descontrolada",
+    stages: [
+      {
+        id: 10,
+        name: "Cenizas Calientes",
+        description: "Primeras chispas de enojo",
+        kingdom: "IRA",
+        difficulty: "EASY",
+        status: "LOCKED",
+        position: { x: 85, y: 80 },
+        rewards: { feBonus: 5 }
+      },
+      {
+        id: 11,
+        name: "R\xEDo de Fuego",
+        description: "La ira consume todo a su paso",
+        kingdom: "IRA",
+        difficulty: "MEDIUM",
+        status: "LOCKED",
+        position: { x: 90, y: 60 },
+        rewards: { feBonus: 10 }
+      },
+      {
+        id: 12,
+        name: "Mansedumbre Triunfante",
+        description: "Domar la bestia interior",
+        kingdom: "IRA",
+        difficulty: "BOSS",
+        status: "LOCKED",
+        position: { x: 85, y: 40 },
+        rewards: { feBonus: 25, scroll: "mansedumbre" }
+      }
+    ]
+  },
+  GULA: {
+    id: "GULA",
+    name: "Reino de la Gula",
+    description: "El banquete eterno que nunca sacia",
+    stages: [
+      {
+        id: 13,
+        name: "Mesas Abundantes",
+        description: "El exceso disfrazado de bendici\xF3n",
+        kingdom: "GULA",
+        difficulty: "EASY",
+        status: "LOCKED",
+        position: { x: 10, y: 75 },
+        rewards: { feBonus: 5 }
+      },
+      {
+        id: 14,
+        name: "Ayuno Sagrado",
+        description: 'Aprender a decir "basta"',
+        kingdom: "GULA",
+        difficulty: "MEDIUM",
+        status: "LOCKED",
+        position: { x: 5, y: 55 },
+        rewards: { feBonus: 10 }
+      },
+      {
+        id: 15,
+        name: "Pan del Cielo",
+        description: "El verdadero alimento del alma",
+        kingdom: "GULA",
+        difficulty: "BOSS",
+        status: "LOCKED",
+        position: { x: 10, y: 35 },
+        rewards: { feBonus: 25, armorPiece: "templanza" }
+      }
+    ]
+  },
+  ENVIDIA: {
+    id: "ENVIDIA",
+    name: "Reino de la Envidia",
+    description: "Los espejos oscuros que distorsionan la realidad",
+    stages: [
+      {
+        id: 16,
+        name: "Reflejo Ajeno",
+        description: "Compararse destruye el gozo",
+        kingdom: "ENVIDIA",
+        difficulty: "EASY",
+        status: "LOCKED",
+        position: { x: 60, y: 70 },
+        rewards: { feBonus: 5 }
+      },
+      {
+        id: 17,
+        name: "Celebraci\xF3n del Otro",
+        description: "Goza cuando otros triunfan",
+        kingdom: "ENVIDIA",
+        difficulty: "MEDIUM",
+        status: "LOCKED",
+        position: { x: 55, y: 50 },
+        rewards: { feBonus: 10 }
+      },
+      {
+        id: 18,
+        name: "Contentamiento",
+        description: "Tu prop\xF3sito es \xFAnico",
+        kingdom: "ENVIDIA",
+        difficulty: "BOSS",
+        status: "LOCKED",
+        position: { x: 60, y: 30 },
+        rewards: { feBonus: 25, scroll: "contentamiento" }
+      }
+    ]
+  },
+  PEREZA: {
+    id: "PEREZA",
+    name: "Reino de la Pereza",
+    description: "Las arenas movedizas de la inacci\xF3n",
+    stages: [
+      {
+        id: 19,
+        name: "Sue\xF1o Pesado",
+        description: "El llamado al descanso excesivo",
+        kingdom: "PEREZA",
+        difficulty: "EASY",
+        status: "LOCKED",
+        position: { x: 40, y: 60 },
+        rewards: { feBonus: 5 }
+      },
+      {
+        id: 20,
+        name: "Despertar del Guerrero",
+        description: "Lev\xE1ntate y toma tu espada",
+        kingdom: "PEREZA",
+        difficulty: "MEDIUM",
+        status: "LOCKED",
+        position: { x: 35, y: 40 },
+        rewards: { feBonus: 10 }
+      },
+      {
+        id: 21,
+        name: "Corona del Vencedor",
+        description: "Batalla final contra la negligencia",
+        kingdom: "PEREZA",
+        difficulty: "BOSS",
+        status: "LOCKED",
+        position: { x: 40, y: 20 },
+        rewards: { feBonus: 30, armorPiece: "diligencia" }
+      }
+    ]
+  }
+};
+function getAllStages() {
+  const allStages = [];
+  for (const kingdom of Object.values(KINGDOMS_CONFIG)) {
+    allStages.push(...kingdom.stages);
+  }
+  return allStages.sort((a, b) => a.id - b.id);
+}
+function getStageById(stageId) {
+  for (const kingdom of Object.values(KINGDOMS_CONFIG)) {
+    const stage = kingdom.stages.find((s) => s.id === stageId);
+    if (stage) return stage;
+  }
+  return null;
+}
+function calculateStageStatus(currentStage, completedStages) {
+  const stageMap = /* @__PURE__ */ new Map();
+  const allStages = getAllStages();
+  for (const stage of allStages) {
+    let status = "LOCKED";
+    if (completedStages.includes(stage.id)) {
+      status = "COMPLETED";
+    } else if (stage.id === currentStage) {
+      status = "CURRENT";
+    } else if (stage.id === currentStage + 1 || currentStage > 0 && stage.id <= currentStage) {
+      status = "AVAILABLE";
+    }
+    if (stage.id === 1 && completedStages.length === 0 && currentStage === 0) {
+      status = "AVAILABLE";
+    }
+    stageMap.set(stage.id, { ...stage, status });
+  }
+  return stageMap;
+}
+
+// src/services/game-service.ts
+var GameService = class {
+  constructor() {
+    this.playerService = getPlayerService();
+    this.persistenceService = getPersistenceService();
+    this.state = {
+      currentScreen: "MAP",
+      playerProfile: null,
+      stages: /* @__PURE__ */ new Map(),
+      theme: {
+        primaryColor: "#6366f1",
+        secondaryColor: "#8b5cf6",
+        backgroundColor: "#0f172a",
+        textColor: "#f8fafc",
+        accentColor: "#fbbf24"
+      },
+      isLoading: true,
+      error: null,
+      telegramId: void 0
+    };
+  }
+  /**
+   * Inicializa el juego cargando o creando el estado del jugador
+   */
+  async initialize(telegramId) {
+    this.state.isLoading = true;
+    this.state.telegramId = telegramId;
+    try {
+      const savedProgress = await loadPlayerProgress();
+      if (savedProgress) {
+        this.playerService.importState(JSON.stringify(savedProgress));
+        this.updateStateFromPlayer(savedProgress);
+      } else {
+        const playerName = telegramId ? `Jugador_${telegramId.slice(-4)}` : "Jugador";
+        const newState = this.playerService.createNewPlayer(playerName, telegramId);
+        const extendedState = createInitialExtendedState(newState, telegramId);
+        await this.persistenceService.saveState(extendedState);
+        this.updateStateFromPlayer(extendedState);
+      }
+      this.state.isLoading = false;
+      return this.state;
+    } catch (error) {
+      console.error("[GameService] Error inicializando:", error);
+      this.state.error = "Error cargando progreso. Int\xE9ntalo de nuevo.";
+      this.state.isLoading = false;
+      return this.state;
+    }
+  }
+  /**
+   * Actualiza el estado interno desde los datos del jugador
+   */
+  updateStateFromPlayer(playerState) {
+    const playerService = this.playerService;
+    const profile = {
+      humanName: playerState.humanName,
+      trueName: playerState.trueName,
+      archetypeTitle: playerState.trueName ? playerService.getState()?.archetypeState.scores[playerState.trueName]?.score || 0 > 0 ? playerState.trueName : null : null,
+      acceptedName: playerState.acceptedName,
+      currentAct: playerState.currentAct,
+      kingdomsLiberated: playerState.kingdomsLiberated,
+      feLevel: playerState.feLevel,
+      currentStage: playerState.currentStage,
+      completedStages: playerState.completedStages,
+      stats: playerState.stats
+    };
+    const stageMap = calculateStageStatus(
+      playerState.currentStage,
+      playerState.completedStages
+    );
+    const isRevealed = playerState.archetypeState.isRevealed;
+    const theme = getThemeForPlayer(playerState.acceptedName, isRevealed);
+    this.state = {
+      ...this.state,
+      playerProfile: profile,
+      stages: stageMap,
+      theme,
+      error: null
+    };
+  }
+  /**
+   * Navega a una pantalla específica
+   */
+  navigateTo(screen) {
+    this.state.currentScreen = screen;
+    return this.state;
+  }
+  /**
+   * Registra una decisión del jugador
+   */
+  async recordDecision(decisionType, description, kingdom, context) {
+    try {
+      const result = this.playerService.recordDecision(
+        decisionType,
+        description,
+        kingdom,
+        context
+      );
+      const currentState = await loadPlayerProgress();
+      if (currentState) {
+        currentState.stats.decisionsMade += 1;
+        await this.persistenceService.saveState(currentState);
+        this.updateStateFromPlayer(currentState);
+      }
+      return this.state;
+    } catch (error) {
+      console.error("[GameService] Error registrando decisi\xF3n:", error);
+      throw error;
+    }
+  }
+  /**
+   * Completa una etapa
+   */
+  async completeStage(stageId, battleWon) {
+    try {
+      const currentState = await loadPlayerProgress();
+      if (!currentState) {
+        throw new Error("No hay estado del jugador");
+      }
+      if (battleWon) {
+        if (!currentState.completedStages.includes(stageId)) {
+          currentState.completedStages.push(stageId);
+        }
+        currentState.stats.battlesWon += 1;
+        if (stageId === currentState.currentStage) {
+          currentState.currentStage = stageId + 1;
+        }
+        const stage = getStageById(stageId);
+        if (stage?.rewards?.feBonus) {
+          currentState.feLevel = Math.min(100, currentState.feLevel + stage.rewards.feBonus);
+        }
+      } else {
+        currentState.stats.battlesLost += 1;
+      }
+      await this.persistenceService.saveState(currentState);
+      this.updateStateFromPlayer(currentState);
+      return this.state;
+    } catch (error) {
+      console.error("[GameService] Error completando etapa:", error);
+      throw error;
+    }
+  }
+  /**
+   * Revela el nombre verdadero del jugador
+   */
+  async revealTrueName() {
+    const result = this.playerService.revealTrueName();
+    const currentState = await loadPlayerProgress();
+    if (currentState) {
+      currentState.nameAccepted = null;
+      await this.persistenceService.saveState(currentState);
+      this.updateStateFromPlayer(currentState);
+    }
+    return result;
+  }
+  /**
+   * El jugador acepta o rechaza su nombre
+   */
+  async acceptOrRejectName(accept) {
+    this.playerService.acceptOrRejectName(accept);
+    const currentState = await loadPlayerProgress();
+    if (currentState) {
+      currentState.nameAccepted = accept;
+      await this.persistenceService.saveState(currentState);
+      this.updateStateFromPlayer(currentState);
+    }
+    return this.state;
+  }
+  /**
+   * Obtiene pistas disponibles para un NPC
+   */
+  getNPCHints(npcId) {
+    return this.playerService.getAvailableHintsForNPC(npcId);
+  }
+  /**
+   * Obtiene el estado actual de la app
+   */
+  getState() {
+    return { ...this.state };
+  }
+  /**
+   * Fuerza una recarga del estado desde persistencia
+   */
+  async refreshState() {
+    const currentState = await loadPlayerProgress();
+    if (currentState) {
+      this.playerService.importState(JSON.stringify(currentState));
+      this.updateStateFromPlayer(currentState);
+    }
+    return this.state;
+  }
+  /**
+   * Resetea todo el progreso (nuevo juego)
+   */
+  async resetGame() {
+    await this.persistenceService.clearState();
+    this.playerService.resetProgress();
+    return this.initialize(this.state.telegramId);
+  }
+  /**
+   * Exporta el estado completo para debugging
+   */
+  exportState() {
+    return this.playerService.exportState();
+  }
+};
+var globalGameService = null;
+function getGameService() {
+  if (!globalGameService) {
+    globalGameService = new GameService();
+  }
+  return globalGameService;
+}
+async function initializeGame(telegramId) {
+  globalGameService = new GameService();
+  return globalGameService.initialize(telegramId);
 }
 export {
-  ALL_ARCHETYPE_NAMES,
-  ARCHETYPE_CONFIGS,
-  NPC_HINTS_DATABASE,
-  PlayerService,
-  calculateDecisionImpact,
-  calculateDominantArchetype,
-  checkNPCHints,
-  createDecisionRecord,
-  getAllAvailableHints,
-  getArchetypeConfig,
-  getArchetypeStatistics,
-  getArchetypesByDecisionType,
-  getArchetypesByGender,
-  getHintsByCategory,
-  getMostFrequentDecisionTypes,
-  getPlayerService,
-  initializeArchetypeState,
-  initializePlayerService,
-  isCloseToArchetype,
-  markHintAsPlayed,
-  resetAllHints,
-  revealTrueName,
-  updateArchetypeState
+  GameService,
+  getGameService,
+  initializeGame
 };
