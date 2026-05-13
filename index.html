@@ -241,7 +241,9 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import { initializeGame } from './dist/ui/app.js';
+
     let currentStageId = null;
     let appState = null;
     let currentBattle = null;
@@ -281,16 +283,7 @@
 
     async function startBattle() {
       closeModal();
-      try {
-        const module = await import('./dist/ui/app.js');
-        const { getCombatService } = module;
-        const combatService = getCombatService();
-        currentBattle = await combatService.startBattle(currentStageId);
-        document.getElementById('battleScreen').classList.add('active');
-      } catch (error) {
-        console.error('Error iniciando batalla:', error);
-        alert('Error iniciando combate. Inténtalo de nuevo.');
-      }
+      alert('Sistema de combate próximamente.');
     }
 
     function closeBattle() { document.getElementById('battleScreen').classList.remove('active'); }
@@ -374,8 +367,6 @@
     async function initApp() {
       const telegramId = initTelegram();
       try {
-        const module = await import('./dist/ui/app.js');
-        const { initializeGame } = module;
         appState = await initializeGame(telegramId);
         updateUI(appState);
         document.getElementById('loadingScreen').style.display = 'none';
@@ -385,13 +376,13 @@
         console.error('Error inicializando:', error);
         document.getElementById('loadingScreen').innerHTML = `
           <p style="color: var(--accent); font-size: 18px; margin-bottom: 16px;">⚔️ SHUV</p>
-          <p>Cargando juego...</p>
+          <p style="margin-bottom: 8px; opacity: 0.7;">Error: ${error.message}</p>
           <button class="btn" style="margin-top: 16px; max-width: 200px;" onclick="location.reload()">Reintentar</button>
         `;
       }
     }
 
-    document.addEventListener('DOMContentLoaded', initApp);
+    initApp();
   </script>
   <script>
     if ("serviceWorker" in navigator) {
