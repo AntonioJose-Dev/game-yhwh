@@ -954,21 +954,21 @@ function createInitialExtendedState(baseState, telegramId) {
     currentStage: 1,
     completedStages: [],
     feLevel: 50,
-    // Nivel inicial de FE
     nameAccepted: null,
-    inventory: {
-      scrolls: [],
-      armorPieces: [],
-      oil: 3,
-      mana: 100
-    },
-    stats: {
-      battlesWon: 0,
-      battlesLost: 0,
-      decisionsMade: 0,
-      playTimeSeconds: 0
-    }
+    inventory: { scrolls: [], armorPieces: [], oil: 3, mana: 100 },
+    stats: { battlesWon: 0, battlesLost: 0, decisionsMade: 0, playTimeSeconds: 0 }
   };
+}
+function isTelegramVersionAtLeast(required) {
+  try {
+    const version = window.Telegram?.WebApp?.version ?? "0.0";
+    const [rMajor, rMinor = 0] = required.split(".").map(Number);
+    const [vMajor, vMinor = 0] = version.split(".").map(Number);
+    if (vMajor !== rMajor) return vMajor > rMajor;
+    return vMinor >= rMinor;
+  } catch {
+    return false;
+  }
 }
 var PersistenceService = class {
   constructor() {
@@ -977,22 +977,18 @@ var PersistenceService = class {
     this.isTelegramAvailable = false;
     this.checkTelegramAvailability();
   }
-  /**
-   * Verifica si Telegram WebApp está disponible
-   */
   checkTelegramAvailability() {
-    if (typeof window !== "undefined" && window.Telegram?.WebApp?.CloudStorage) {
-      this.cloudStorage = window.Telegram.WebApp.CloudStorage;
+    const tg = typeof window !== "undefined" ? window.Telegram?.WebApp : null;
+    if (tg?.CloudStorage && isTelegramVersionAtLeast("6.9")) {
+      this.cloudStorage = tg.CloudStorage;
       this.isTelegramAvailable = true;
-      console.log("[Persistence] Telegram CloudStorage disponible");
+      console.log("[Persistence] Telegram CloudStorage disponible (v" + tg.version + ")");
     } else {
       this.isTelegramAvailable = false;
-      console.log("[Persistence] Usando localStorage (fallback)");
+      const ver = tg?.version ?? "desconocida";
+      console.log("[Persistence] Usando localStorage (versi\xF3n Telegram: " + ver + ")");
     }
   }
-  /**
-   * Guarda el estado del jugador
-   */
   async saveState(state) {
     const serialized = JSON.stringify(state);
     return new Promise((resolve) => {
@@ -1013,24 +1009,17 @@ var PersistenceService = class {
       }
     });
   }
-  /**
-   * Carga el estado del jugador
-   */
   async loadState() {
     return new Promise((resolve) => {
       if (this.isTelegramAvailable && this.cloudStorage) {
         this.cloudStorage.getItem(this.storageKey, (error, value) => {
           if (error || !value) {
             console.warn("[Persistence] No se encontr\xF3 estado en CloudStorage");
-            const localState = this.loadFromLocalStorage();
-            resolve(localState);
+            resolve(this.loadFromLocalStorage());
           } else {
             try {
-              const state = JSON.parse(value);
-              console.log("[Persistence] Estado cargado desde CloudStorage");
-              resolve(state);
+              resolve(JSON.parse(value));
             } catch (e) {
-              console.error("[Persistence] Error parseando estado:", e);
               resolve(this.loadFromLocalStorage());
             }
           }
@@ -1040,9 +1029,6 @@ var PersistenceService = class {
       }
     });
   }
-  /**
-   * Guarda en localStorage como fallback
-   */
   saveToLocalStorage(serialized) {
     try {
       localStorage.setItem(this.storageKey, serialized);
@@ -1051,16 +1037,12 @@ var PersistenceService = class {
       console.error("[Persistence] Error guardando en localStorage:", error);
     }
   }
-  /**
-   * Carga desde localStorage como fallback
-   */
   loadFromLocalStorage() {
     try {
       const stored = localStorage.getItem(this.storageKey);
       if (stored) {
-        const state = JSON.parse(stored);
         console.log("[Persistence] Estado cargado desde localStorage");
-        return state;
+        return JSON.parse(stored);
       }
       return null;
     } catch (error) {
@@ -1068,16 +1050,10 @@ var PersistenceService = class {
       return null;
     }
   }
-  /**
-   * Elimina el estado guardado (reset de progreso)
-   */
   async clearState() {
     return new Promise((resolve) => {
       if (this.isTelegramAvailable && this.cloudStorage) {
-        this.cloudStorage.removeItem(this.storageKey, (error) => {
-          if (error) {
-            console.error("[Persistence] Error eliminando en CloudStorage:", error);
-          }
+        this.cloudStorage.removeItem(this.storageKey, () => {
           localStorage.removeItem(this.storageKey);
           resolve();
         });
@@ -1087,29 +1063,18 @@ var PersistenceService = class {
       }
     });
   }
-  /**
-   * Verifica si existe un estado guardado
-   */
   async hasSavedState() {
     return new Promise((resolve) => {
       if (this.isTelegramAvailable && this.cloudStorage) {
         this.cloudStorage.getItem(this.storageKey, (error, value) => {
-          if (value) {
-            resolve(true);
-          } else {
-            const local = localStorage.getItem(this.storageKey);
-            resolve(!!local);
-          }
+          if (value) resolve(true);
+          else resolve(!!localStorage.getItem(this.storageKey));
         });
       } else {
-        const local = localStorage.getItem(this.storageKey);
-        resolve(!!local);
+        resolve(!!localStorage.getItem(this.storageKey));
       }
     });
   }
-  /**
-   * Obtiene información del almacenamiento
-   */
   getStorageInfo() {
     return {
       isTelegram: this.isTelegramAvailable,
