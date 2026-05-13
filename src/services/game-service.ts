@@ -1,34 +1,30 @@
 /**
  * SHUV - Servicio Principal del Juego para Telegram Mini App
- * Integra persistencia, arquetipos, y gestión de estado del jugador
  */
 
 import { PlayerService, getPlayerService } from '../services/player-service';
-import { 
-  PersistenceService, 
+import {
+  PersistenceService,
   getPersistenceService,
   ExtendedPlayerState,
   createInitialExtendedState,
   loadPlayerProgress,
   savePlayerProgress
 } from '../persistence/telegram-storage';
-import { 
-  PlayerProfileUI, 
+import {
+  PlayerProfileUI,
   AppScreen,
   getThemeForPlayer,
   ThemeConfig
 } from '../types/ui-types';
-import { 
-  calculateStageStatus, 
+import {
+  calculateStageStatus,
   getAllStages,
   getStageById
 } from '../core/kingdoms-config';
 import type { Stage } from '../types/ui-types';
 import { ArchetypeName, DecisionType } from '../types/archetypes';
 
-/**
- * Estado global de la aplicación
- */
 export interface AppState {
   currentScreen: AppScreen;
   playerProfile: PlayerProfileUI | null;
@@ -39,18 +35,14 @@ export interface AppState {
   telegramId?: string;
 }
 
-/**
- * Servicio principal que coordina toda la lógica del juego
- */
 export class GameService {
   private playerService: PlayerService;
   private persistenceService: PersistenceService;
   private state: AppState;
-  
+
   constructor() {
     this.playerService = getPlayerService();
     this.persistenceService = getPersistenceService();
-    
     this.state = {
       currentScreen: 'MAP',
       playerProfile: null,
@@ -67,31 +59,22 @@ export class GameService {
       telegramId: undefined
     };
   }
-  
-  /**
-   * Inicializa el juego cargando o creando el estado del jugador
-   */
+
   async initialize(telegramId?: string): Promise<AppState> {
     this.state.isLoading = true;
     this.state.telegramId = telegramId;
-    
     try {
-      // Intentar cargar progreso guardado
       const savedProgress = await loadPlayerProgress();
-      
       if (savedProgress) {
-        // Cargar estado existente
         this.playerService.importState(JSON.stringify(savedProgress));
         this.updateStateFromPlayer(savedProgress);
       } else {
-        // Crear nuevo jugador
         const playerName = telegramId ? `Jugador_${telegramId.slice(-4)}` : 'Jugador';
         const newState = this.playerService.createNewPlayer(playerName, telegramId);
         const extendedState = createInitialExtendedState(newState, telegramId);
         await this.persistenceService.saveState(extendedState);
         this.updateStateFromPlayer(extendedState);
       }
-      
       this.state.isLoading = false;
       return this.state;
     } catch (error) {
@@ -101,20 +84,12 @@ export class GameService {
       return this.state;
     }
   }
-  
-  /**
-   * Actualiza el estado interno desde los datos del jugador
-   */
+
   private updateStateFromPlayer(playerState: ExtendedPlayerState): void {
-    const playerService = this.playerService;
     const profile: PlayerProfileUI = {
       humanName: playerState.humanName,
       trueName: playerState.trueName,
-      archetypeTitle: playerState.trueName 
-        ? playerService.getState()?.archetypeState.scores[playerState.trueName]?.score || 0 > 0
-          ? playerState.trueName 
-          : null
-        : null,
+      archetypeTitle: playerState.trueName ? playerState.trueName : null,
       acceptedName: playerState.acceptedName,
       currentAct: playerState.currentAct,
       kingdomsLiberated: playerState.kingdomsLiberated,
@@ -123,168 +98,90 @@ export class GameService {
       completedStages: playerState.completedStages,
       stats: playerState.stats
     };
-    
-    // Calcular etapas disponibles
-    const stageMap = calculateStageStatus(
-      playerState.currentStage,
-      playerState.completedStages
-    );
-    
-    // Obtener tema visual
+    const stageMap = calculateStageStatus(playerState.currentStage, playerState.completedStages);
     const isRevealed = playerState.archetypeState.isRevealed;
     const theme = getThemeForPlayer(playerState.acceptedName, isRevealed);
-    
-    this.state = {
-      ...this.state,
-      playerProfile: profile,
-      stages: stageMap,
-      theme,
-      error: null
-    };
+    this.state = { ...this.state, playerProfile: profile, stages: stageMap, theme, error: null };
   }
-  
-  /**
-   * Navega a una pantalla específica
-   */
+
   navigateTo(screen: AppScreen): AppState {
     this.state.currentScreen = screen;
     return this.state;
   }
-  
-  /**
-   * Registra una decisión del jugador
-   */
-  async recordDecision(
-    decisionType: DecisionType,
-    description: string,
-    kingdom?: string,
-    context?: string
-  ): Promise<AppState> {
+
+  async recordDecision(decisionType: DecisionType, description: string, kingdom?: string, context?: string): Promise<AppState> {
     try {
-      const result = this.playerService.recordDecision(
-        decisionType,
-        description,
-        kingdom,
-        context
-      );
-      
-      // Actualizar estadísticas
+      this.playerService.recordDecision(decisionType, description, kingdom, context);
       const currentState = await loadPlayerProgress();
       if (currentState) {
         currentState.stats.decisionsMade += 1;
         await this.persistenceService.saveState(currentState);
         this.updateStateFromPlayer(currentState);
       }
-      
       return this.state;
     } catch (error) {
       console.error('[GameService] Error registrando decisión:', error);
       throw error;
     }
   }
-  
-  /**
-   * Completa una etapa
-   */
+
   async completeStage(stageId: number, battleWon: boolean): Promise<AppState> {
     try {
       const currentState = await loadPlayerProgress();
-      if (!currentState) {
-        throw new Error('No hay estado del jugador');
-      }
-      
+      if (!currentState) throw new Error('No hay estado del jugador');
       if (battleWon) {
-        // Añadir a completadas si no está ya
-        if (!currentState.completedStages.includes(stageId)) {
-          currentState.completedStages.push(stageId);
-        }
-        
-        // Actualizar estadísticas
+        if (!currentState.completedStages.includes(stageId)) currentState.completedStages.push(stageId);
         currentState.stats.battlesWon += 1;
-        
-        // Avanzar etapa actual si es la siguiente
-        if (stageId === currentState.currentStage) {
-          currentState.currentStage = stageId + 1;
-        }
-        
-        // Aplicar recompensas de FE
+        if (stageId === currentState.currentStage) currentState.currentStage = stageId + 1;
         const stage = getStageById(stageId);
-        if (stage?.rewards?.feBonus) {
-          currentState.feLevel = Math.min(100, currentState.feLevel + stage.rewards.feBonus);
-        }
+        if (stage?.rewards?.feBonus) currentState.feLevel = Math.min(100, currentState.feLevel + stage.rewards.feBonus);
       } else {
         currentState.stats.battlesLost += 1;
       }
-      
       await this.persistenceService.saveState(currentState);
       this.updateStateFromPlayer(currentState);
-      
       return this.state;
     } catch (error) {
       console.error('[GameService] Error completando etapa:', error);
       throw error;
     }
   }
-  
-  /**
-   * Revela el nombre verdadero del jugador
-   */
-  async revealTrueName(): Promise<{
-    trueName: ArchetypeName;
-    title: string;
-    description: string;
-    biblicalReference: string;
-  }> {
+
+  async revealTrueName(): Promise<{ trueName: ArchetypeName; title: string; description: string; biblicalReference: string; }> {
     const result = this.playerService.revealTrueName();
-    
-    // Guardar cambio
     const currentState = await loadPlayerProgress();
     if (currentState) {
-      currentState.nameAccepted = null; // Aún no acepta o rechaza
+      currentState.nameAccepted = null;
       await this.persistenceService.saveState(currentState);
       this.updateStateFromPlayer(currentState);
     }
-    
     return result;
   }
-  
-  /**
-   * El jugador acepta o rechaza su nombre
-   */
+
   async acceptOrRejectName(accept: boolean): Promise<AppState> {
     this.playerService.acceptOrRejectName(accept);
-    
     const currentState = await loadPlayerProgress();
     if (currentState) {
       currentState.nameAccepted = accept;
       await this.persistenceService.saveState(currentState);
       this.updateStateFromPlayer(currentState);
     }
-    
     return this.state;
   }
-  
-  /**
-   * Obtiene pistas disponibles para un NPC
-   */
-  getNPCHints(npcId: string): Array<{
-    hintId: string;
-    dialogLine: string;
-    category: string;
-  }> {
+
+  getNPCHints(npcId: string) {
     return this.playerService.getAvailableHintsForNPC(npcId);
   }
-  
-  /**
-   * Obtiene el estado actual de la app
-   */
+
+  /** Expone el PlayerService para uso en CombatService */
+  getPlayerService(): PlayerService {
+    return this.playerService;
+  }
+
   getState(): AppState {
     return { ...this.state };
   }
-  
-  /**
-   * Fuerza una recarga del estado desde persistencia
-   */
+
   async refreshState(): Promise<AppState> {
     const currentState = await loadPlayerProgress();
     if (currentState) {
@@ -293,40 +190,31 @@ export class GameService {
     }
     return this.state;
   }
-  
-  /**
-   * Resetea todo el progreso (nuevo juego)
-   */
+
   async resetGame(): Promise<AppState> {
     await this.persistenceService.clearState();
     this.playerService.resetProgress();
     return this.initialize(this.state.telegramId);
   }
-  
-  /**
-   * Exporta el estado completo para debugging
-   */
+
   exportState(): string {
     return this.playerService.exportState();
   }
 }
 
-/**
- * Instancia singleton del servicio de juego
- */
 let globalGameService: GameService | null = null;
 
 export function getGameService(): GameService {
-  if (!globalGameService) {
-    globalGameService = new GameService();
-  }
+  if (!globalGameService) globalGameService = new GameService();
   return globalGameService;
 }
 
 /**
- * Inicializa el servicio de juego (llamar al iniciar la app)
+ * Devuelve { gameService, state } para que el UI pueda acceder
+ * al servicio y al estado inicial en un solo await.
  */
-export async function initializeGame(telegramId?: string): Promise<AppState> {
+export async function initializeGame(telegramId?: string): Promise<{ gameService: GameService; state: AppState }> {
   globalGameService = new GameService();
-  return globalGameService.initialize(telegramId);
+  const state = await globalGameService.initialize(telegramId);
+  return { gameService: globalGameService, state };
 }
